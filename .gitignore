@@ -1,0 +1,37 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# main ignore files
+/.idea
+
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# python interpretor
+/server-side/venv
+
+# keyfiles
+/server-side/private_key.pem
+/server-side/public_key.pem
+
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/client-side/node_modules
+/client-side/.pnp
+/client-side.pnp.js
+/client-side/package.lock.json
+# testing
+/client-side/coverage
+
+# production
+/client-side/build
+
+# misc
+/client-side/.DS_Store
+/client-side/.env.local
+/client-side/.env.development.local
+/client-side/.env.test.local
+/client-side/.env.production.local
+
+/client-side/npm-debug.log*
+/client-side/yarn-debug.log*
+/client-side/yarn-error.log*

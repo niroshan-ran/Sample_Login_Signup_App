@@ -1,0 +1,23 @@
+import React from 'react';
+import SignIn from "./interfaces/SignIn";
+import {BrowserRouter, Route, Switch} from 'react-router-dom';
+import SignUp from "./interfaces/SignUp";
+
+function App() {
+    return <div>
+        <BrowserRouter>
+
+            <Switch>
+                <Route path="/signup">
+                    <SignUp/>
+                </Route>
+                <Route path="/">
+                    <SignIn/>
+                </Route>
+            </Switch>
+        </BrowserRouter>
+
+    </div>;
+}
+
+export default App;
