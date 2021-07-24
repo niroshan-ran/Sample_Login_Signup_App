@@ -12,6 +12,7 @@ import {makeStyles} from '@material-ui/core/styles';
 import Container from '@material-ui/core/Container';
 import axios from "axios";
 import Forge from "node-forge";
+import {RSA} from 'hybrid-crypto-js';
 
 
 function Copyright() {
@@ -58,19 +59,26 @@ let encrypt_message = (a_message, pubkey) => {
     });
     return Forge.util.encode64(encrypted);
 
-
 }
 
-/*let decrypt_message = (encrypted_msg, rsakey) => {
+let decrypt_message = (encrypted_msg, rsakey) => {
 
+    let privateKey = Forge.pki.privateKeyFromPem(rsakey);
+    return privateKey.decrypt(Forge.util.decode64(encrypted_msg), "RSA-OAEP", {
+        md: Forge.md.sha256.create(),
+        mgf1: Forge.mgf1.create()
+    });
 
-}*/
+}
 
 export default function SignUp() {
 
     let [email, setEmail] = useState("");
     let [password, setPassword] = useState("");
-    //let [key, setKey] = useState(null);
+    let [key, setKey] = useState({
+        public_key: null,
+        private_key: null
+    });
     let [status, setStatus] = useState(false);
 
     const classes = useStyles();
@@ -92,17 +100,26 @@ export default function SignUp() {
         }
     }
 
+    let generateKeys = async () => {
+
+        let rsa = new RSA();
+
+        await rsa.generateKeyPair(function (keyPair) {
+            setKey({
+                public_key: keyPair.publicKey,
+                private_key: keyPair.privateKey
+            });
+        }, 1024);
+    }
 
     let singUpUser = (event) => {
         event.preventDefault();
-        //setKey();
-
-        setStatus(true);
+        generateKeys().then(()=>setStatus(true));
     }
 
 
     useEffect(() => {
-        if (status === true /*&& key !== null*/ && email !== "" && password !== "") {
+        if (status === true && key.private_key !== null && key.public_key !== null && email !== "" && password !== "") {
 
 
             axios.get("http://127.0.0.1:5000/get_server_public_key").then((result) => {
@@ -110,46 +127,28 @@ export default function SignUp() {
 
                 if (result.status === 200) {
 
-                    let server_public_key = result.data.public_key;
+                    let server_public_key_1 = result.data.server_public_key_1;
+
                     let user = {
-                        email: encrypt_message(email, server_public_key),
-                        password: encrypt_message(password, server_public_key)
+                        email: encrypt_message(email, server_public_key_1),
+                        password: encrypt_message(password, server_public_key_1),
+                        client_public_key: key.public_key
                     }
-
                     axios.post("http://127.0.0.1:5000/sign_up", user).then((result) => {
+                        if (result.status === 200) {
+                            let data = result.data;
 
-                        if (result.status === 200)
-                            console.log("encryption/decryption success")
-                        else
-                            console.log("encryption/decryption failed")
+                            let rowcount = decrypt_message(data.row_count, key.private_key)
+
+
+                            console.log(rowcount)
+
+
+
+                        } else {
+                            console.log("Unknown Error Occurred")
+                        }
                     });
-
-                    /*
-                                        let server_public_key_1 = cryptico.publicKeyFromString(result.data.server_public_key_1);
-
-                                        let user = {
-                                            email: encrypt_message(email, server_public_key_1),
-                                            password: encrypt_message(password, server_public_key_1),
-                                            client_public_key: encrypt_message(cryptico.publicKeyString(key), server_public_key_1)
-                                        }
-
-                                        console.log(user.email)
-
-                                        axios.post("http://127.0.0.1:5000/sign_up", user).then((result) => {
-                                            if (result.status === 200) {
-                                                let data = result.data;
-
-                                                let rowcount = parseInt(decrypt_message(data.row_count, key), 0)
-
-                                                if (rowcount > 0) {
-                                                    console.log("Message Passing Success")
-                                                }
-
-
-                                            } else {
-                                                console.log("Unknown Error Occurred")
-                                            }
-                                        })*/
 
                 } else {
                     console.log("Unknown Error Occurred")
@@ -159,7 +158,7 @@ export default function SignUp() {
             })
             setStatus(false);
         }
-    }, [/*key, */email, password, status])
+    }, [key.private_key,key.public_key, email, password, status])
 
 
     return (

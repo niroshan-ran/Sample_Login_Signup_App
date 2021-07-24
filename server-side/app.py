@@ -1,3 +1,4 @@
+import base64
 import json
 from flask_cors import CORS, cross_origin
 from flask import Flask, request, jsonify
@@ -5,7 +6,7 @@ import mysql.connector
 from Crypto.Cipher import PKCS1_OAEP
 from Crypto.PublicKey import RSA
 from Crypto.Hash import SHA256
-from base64 import b64decode
+from base64 import b64decode, b64encode
 
 cnx = mysql.connector.connect(user='root', password='GRpP@&#^4n*6tz*g%E#f', host='localhost',
                               database='sample_schema')
@@ -21,7 +22,7 @@ def generate_key_file():
     public_key.write(key_pair.publickey().exportKey())
     public_key.close()
 
-    return key_pair.publickey()
+    return key_pair
 
 
 def decrypt_message(encrypted_message):
@@ -31,10 +32,11 @@ def decrypt_message(encrypted_message):
     return decrypted_message.decode()
 
 
-# def encrypt_message(message):
-#    key = RSA.importKey(open("public_key.pem").read())
-#    cipher = PKCS1_OAEP.new(key, hashAlgo=SHA256)
-#    decrypted_message = cipher.encrypt(b64decode(encrypted_message))
+def encrypt_message(message, public_key):
+    key = RSA.importKey(public_key)
+    cipher = PKCS1_OAEP.new(key, hashAlgo=SHA256)
+    encrypted_message = cipher.encrypt(bytes(message, 'utf-8'))
+    return b64encode(encrypted_message).decode('utf-8')
 
 
 app = Flask(__name__)
@@ -53,51 +55,52 @@ api_v2_cors_config = {
 def get_server_public_key():
     generate_key_file()
 
-    return jsonify({"public_key": generate_key_file().export_key().decode()})
+    return jsonify({"server_public_key_1": generate_key_file().public_key().export_key().decode()})
 
 
 @app.route('/sign_up', methods=['POST'])
 @cross_origin(**api_v2_cors_config)
 def sign_up():
     records = json.loads(request.data)
-    print(records["email"])
-    print(decrypt_message(records["email"]))
-    print(decrypt_message(records["password"]))
-    # query_user = "INSERT INTO user_table VALUES (%s, %s)"
-    #
-    # my_cursor = cnx.cursor()
-    #
-    # val_user = (decrypt_message(records["email"], private_key1), decrypt_message((records["password"]), private_key1))
-    #
-    # print(val_user)
-    # my_cursor.execute(query_user, val_user)
-    # cnx.commit()
-    #
-    # row_count = my_cursor.rowcount
-    #
-    # my_cursor = cnx.cursor()
-    #
-    # global private_key2, public_key2
-    #
-    # key = RSA.import_key(decrypt_message(records["client_public_key"], private_key1),
-    #                      "sample pass phrase")
-    # client_public_key = rsa.PublicKey(n=key.n, e=key.e)
-    #
-    # query_keys = "INSERT INTO server_key_table VALUES (%s, %s, %s, %s, %s)"
-    # val_keys = (public_key1.exportKey().decode(), private_key1.exportKey().decode(), public_key2.exportKey().decode(),
-    #             private_key2.exportKey().decode(), key.exportKey().decode())
-    #
-    # my_cursor.execute(query_keys, val_keys)
-    #
-    # cnx.commit()
-    #
-    # encrypted_row_count = encrypt_message(row_count, client_public_key)
-    # encrypted_server_public_key_2 = encrypt_message(public_key2.exportKey().decode(), client_public_key)
-    #
-    # my_cursor.close()
-    # return jsonify({'row_count': encrypted_row_count, 'server_public_key_2': encrypted_server_public_key_2})
 
-    return ""
+    query_user = "REPLACE INTO user_table VALUES (%s, %s)"
+
+    my_cursor = cnx.cursor()
+
+    val_user = (decrypt_message(records["email"]), decrypt_message(records["password"]))
+
+    my_cursor.execute(query_user, val_user)
+
+    row_count = my_cursor.rowcount
+
+    my_cursor = cnx.cursor()
+
+    client_public_key = records["client_public_key"]
+
+    private_key1 = RSA.importKey(open("private_key.pem").read())
+    public_key1 = RSA.importKey(open("public_key.pem").read())
+
+    private_key2 = generate_key_file()
+    public_key2 = private_key2.public_key()
+
+    query_keys = "INSERT IGNORE INTO server_key_table " \
+                 "(public_key_1, private_key_1, public_key_2, private_key_2, client_public_key) " \
+                 "VALUES (%s, %s, %s, %s, %s)"
+    val_keys = (
+        public_key1.exportKey().decode(), private_key1.exportKey().decode(), public_key2.exportKey().decode(),
+        private_key2.exportKey().decode(),
+        str.encode(client_public_key).decode())
+
+    my_cursor.execute(query_keys, val_keys)
+
+    message = str(f"Successfully Inserted Records {row_count}")
+
+    encrypted_row_count = encrypt_message(message, client_public_key)
+
+    cnx.commit()
+    my_cursor.close()
+
+    return jsonify({'row_count': encrypted_row_count, 'server_public_key_2': public_key2.exportKey().decode()})
 
 
 if __name__ == '__main__':
