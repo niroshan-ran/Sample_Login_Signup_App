@@ -1,10 +1,9 @@
-import base64
 import json
 from flask_cors import CORS, cross_origin
 from flask import Flask, request, jsonify
 from Crypto.PublicKey import RSA
 from dbconnect import DBConnector
-import cryptography as crypt
+import EncryptDecrypt as crypt
 
 app = Flask(__name__)
 
@@ -33,11 +32,17 @@ def sign_in():
 
     result = dbcon.execute_query(query, val)
 
+    message = "Your Login Attempt Successfully Completed"
+
+    client_public_key = records["client_public_key"]
+
+    encrypted_message = crypt.encrypt_message(message, client_public_key)
+
     if len(result) > 0:
         match = crypt.check_password(password, result[0][1])
-        return jsonify({"password_status": match, "email_status": True})
+        return jsonify({"message": encrypted_message, "password_status": match, "email_status": True})
     else:
-        return jsonify({"password_status": False, "email_status": False})
+        return jsonify({"message": encrypted_message, "password_status": False, "email_status": False})
 
 
 @app.route('/get_server_public_key_for_sign_in', methods=['GET'])
@@ -65,14 +70,14 @@ def sign_up():
 
     query_user = "INSERT INTO user_table VALUES (%s, %s)"
 
-    hash_password = crypt.get_hashed_password(bytes(crypt.decrypt_message(records["password"]), 'utf-8'))
+    hash_password = crypt.get_hashed_password(crypt.decrypt_message(records["password"]))
 
     val_user = (
         crypt.decrypt_message(records["email"]),
-        hash_password.decode('utf-8')
+        hash_password
     )
 
-    row_count = len(dbcon.execute_query(query_user, val_user))
+    dbcon.execute_query(query_user, val_user)
     dbcon.commit_database()
 
     client_public_key = records["client_public_key"]
@@ -94,11 +99,11 @@ def sign_up():
     dbcon.execute_query(query_keys, val_keys)
     dbcon.commit_database()
 
-    message = str(f"Successfully Inserted Records {row_count}")
+    message = "Your Registration Attempt Successfully Completed"
 
-    encrypted_row_count = crypt.encrypt_message(message, client_public_key)
+    encrypted_message = crypt.encrypt_message(message, client_public_key)
 
-    return jsonify({'row_count': encrypted_row_count, 'server_public_key_2': public_key2.exportKey().decode()})
+    return jsonify({'message': encrypted_message, 'server_public_key_2': public_key2.exportKey().decode()})
 
 
 if __name__ == '__main__':

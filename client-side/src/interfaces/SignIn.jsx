@@ -12,7 +12,7 @@ import Typography from '@material-ui/core/Typography';
 import {makeStyles} from '@material-ui/core/styles';
 import {RSA} from "hybrid-crypto-js";
 import axios from "axios";
-import {encrypt_message} from "../cryptography/encrypt-decrypt";
+import {decrypt_message, encrypt_message} from "../cryptography/EncryptDecrypt";
 import {Backdrop, CircularProgress, Snackbar} from "@material-ui/core";
 import MuiAlert from "@material-ui/lab/Alert";
 
@@ -76,6 +76,7 @@ export default function SignIn() {
     const [open, setOpen] = useState(false);
     const [successOpen, setSuccessOpen] = useState(false);
     const [errorOpen, setErrorOpen] = useState(false);
+    const [successMessage, setSuccessMessage] = useState("Login Success");
     const [errorMessage, setErrorMessage] = useState("Unknown Error Occurred");
     const classes = useStyles();
 
@@ -126,7 +127,12 @@ export default function SignIn() {
                 public_key: keyPair.publicKey,
                 private_key: keyPair.privateKey
             });
-        }, 1024);
+        }, 2048);
+    }
+
+    let resetDetails = () => {
+        setEmail("");
+        setPassword("");
     }
 
     let singInUser = (event) => {
@@ -160,6 +166,9 @@ export default function SignIn() {
                                 let passwordStatus = data.password_status
 
                                 if (emailStatus === true && passwordStatus === true) {
+                                    let message = decrypt_message(data.message, key.private_key)
+                                    setSuccessMessage(message);
+                                    resetDetails();
                                     handleToggle();
                                     setSuccessOpen(true);
                                     setStatus(false);
@@ -277,7 +286,7 @@ export default function SignIn() {
                 <CircularProgress color="inherit"/>
             </Backdrop>
             <Snackbar open={successOpen} autoHideDuration={6000} onClose={handleSuccessClose}>
-                <Alert onClose={handleSuccessClose} severity="success">Login Success!</Alert>
+                <Alert onClose={handleSuccessClose} severity="success">{successMessage}</Alert>
             </Snackbar>
             <Snackbar open={errorOpen} autoHideDuration={6000} onClose={handleErrorClose}>
                 <Alert onClose={handleErrorClose} severity="error">{errorMessage}</Alert>

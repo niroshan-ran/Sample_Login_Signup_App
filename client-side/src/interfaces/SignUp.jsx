@@ -13,7 +13,7 @@ import MuiAlert from '@material-ui/lab/Alert';
 import Container from '@material-ui/core/Container';
 import axios from "axios";
 import {RSA} from 'hybrid-crypto-js';
-import {decrypt_message, encrypt_message} from "../cryptography/encrypt-decrypt";
+import {decrypt_message, encrypt_message} from "../cryptography/EncryptDecrypt";
 import {Backdrop, CircularProgress, Snackbar} from "@material-ui/core";
 
 
@@ -67,6 +67,7 @@ export default function SignUp() {
     const [successOpen, setSuccessOpen] = useState(false);
     const [errorOpen, setErrorOpen] = useState(false);
     const [errorMessage, setErrorMessage] = useState("Unknown Error Occurred");
+    const [successMessage, setSuccessMessage] = useState("Registration Success");
     const classes = useStyles();
 
     const handleSuccessClose = (event, reason) => {
@@ -88,6 +89,11 @@ export default function SignUp() {
     const handleToggle = () => {
         setOpen(!open);
     };
+
+    let resetDetails = () => {
+        setEmail("");
+        setPassword("");
+    }
 
 
     let updateValues = (event) => {
@@ -116,7 +122,7 @@ export default function SignUp() {
                 public_key: keyPair.publicKey,
                 private_key: keyPair.privateKey
             });
-        }, 1024);
+        }, 2048);
     }
 
     let singUpUser = (event) => {
@@ -147,11 +153,10 @@ export default function SignUp() {
                             if (result.status === 200) {
                                 let data = result.data;
 
-                                let rowcount = decrypt_message(data.row_count, key.private_key)
-
-                                console.log(rowcount);
-
+                                let message = decrypt_message(data.message, key.private_key)
+                                resetDetails();
                                 handleToggle();
+                                setSuccessMessage(message);
                                 setSuccessOpen(true);
                                 setStatus(false);
 
@@ -253,7 +258,7 @@ export default function SignUp() {
                 <CircularProgress color="inherit"/>
             </Backdrop>
             <Snackbar open={successOpen} autoHideDuration={6000} onClose={handleSuccessClose}>
-                <Alert onClose={handleSuccessClose} severity="success">Registration Success! Please Login Again</Alert>
+                <Alert onClose={handleSuccessClose} severity="success">{successMessage}</Alert>
             </Snackbar>
             <Snackbar open={errorOpen} autoHideDuration={6000} onClose={handleErrorClose}>
                 <Alert onClose={handleErrorClose} severity="error">{errorMessage}</Alert>
