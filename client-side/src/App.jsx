@@ -8,7 +8,7 @@ function App() {
         <BrowserRouter>
 
             <Switch>
-                <Route path="/signup">
+                <Route path="/sign_up_page">
                     <SignUp/>
                 </Route>
                 <Route path="/">

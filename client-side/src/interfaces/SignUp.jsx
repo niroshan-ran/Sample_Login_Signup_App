@@ -15,10 +15,10 @@ import axios from "axios";
 import {RSA} from 'hybrid-crypto-js';
 import {decrypt_message, encrypt_message} from "../cryptography/EncryptDecrypt";
 import {Backdrop, CircularProgress, Snackbar} from "@material-ui/core";
-
+import {PublicKeyURL, SingUpURL} from "../utils/Constants";
 
 function Alert(props) {
-  return <MuiAlert elevation={6} variant="filled" {...props} />;
+    return <MuiAlert elevation={6} variant="filled" {...props} />;
 }
 
 function Copyright() {
@@ -35,6 +35,12 @@ function Copyright() {
 }
 
 const useStyles = makeStyles((theme) => ({
+    root: {
+        width: '100%',
+        '& > * + *': {
+            marginTop: theme.spacing(2),
+        },
+    },
     paper: {
         marginTop: theme.spacing(8),
         display: 'flex',
@@ -52,6 +58,10 @@ const useStyles = makeStyles((theme) => ({
     submit: {
         margin: theme.spacing(3, 0, 2),
     },
+    backdrop: {
+        zIndex: theme.zIndex.drawer + 1,
+        color: '#fff',
+    },
 }));
 
 export default function SignUp() {
@@ -63,31 +73,28 @@ export default function SignUp() {
         private_key: null
     });
     let [status, setStatus] = useState(false);
-    const [open, setOpen] = useState(false);
-    const [successOpen, setSuccessOpen] = useState(false);
-    const [errorOpen, setErrorOpen] = useState(false);
-    const [errorMessage, setErrorMessage] = useState("Unknown Error Occurred");
-    const [successMessage, setSuccessMessage] = useState("Registration Success");
+    const [backDropOpen, setBackDropBackDropOpen] = useState(false);
+    const [alertOpen, setAlertOpen] = useState(false);
+    const [alertSeverity, setAlertSeverity] = useState("error")
+    const [alertMessage, setAlertMessage] = useState("Unknown Error Occurred");
     const classes = useStyles();
 
-    const handleSuccessClose = (event, reason) => {
+    const openAlert = (message, severity) => {
+        setAlertMessage(message);
+        setAlertSeverity(severity);
+        setAlertOpen(true);
+    }
+
+    const handleAlertClose = (event, reason) => {
         if (reason === 'clickaway') {
             return;
         }
 
-        setSuccessOpen(false);
+        setAlertOpen(false);
     };
 
-    const handleErrorClose = (event, reason) => {
-        if (reason === 'clickaway') {
-            return;
-        }
-
-        setErrorOpen(false);
-    };
-
-    const handleToggle = () => {
-        setOpen(!open);
+    const handleBackDropToggle = () => {
+        setBackDropBackDropOpen(!backDropOpen);
     };
 
     let resetDetails = () => {
@@ -126,69 +133,77 @@ export default function SignUp() {
     }
 
     let singUpUser = (event) => {
-        handleToggle();
+        handleBackDropToggle();
         event.preventDefault();
         generateKeys().then(() => setStatus(true));
     }
 
 
     useEffect(() => {
-        if (open === true && status === true && key.private_key !== null && key.public_key !== null && email !== "" && password !== "") {
-
-            try {
-
-                axios.get("http://127.0.0.1:5000/get_server_public_key").then((result) => {
+        if (backDropOpen === true && status === true && key.private_key !== null && key.public_key !== null && email !== "" && password !== "") {
 
 
-                    if (result.status === 200) {
+            axios.get(PublicKeyURL).then((result) => {
 
-                        let server_public_key_1 = result.data.server_public_key_1;
 
-                        let user = {
-                            email: encrypt_message(email, server_public_key_1),
-                            password: encrypt_message(password, server_public_key_1),
-                            client_public_key: key.public_key
-                        }
-                        axios.post("http://127.0.0.1:5000/sign_up", user).then((result) => {
-                            if (result.status === 200) {
-                                let data = result.data;
+                if (result.status === 200) {
+
+                    let server_public_key_1 = result.data.server_public_key_1;
+
+                    let user = {
+                        email: encrypt_message(email, server_public_key_1),
+                        password: encrypt_message(password, server_public_key_1),
+                        client_public_key: key.public_key
+                    }
+                    axios.post(SingUpURL, user).then((result) => {
+                        if (result.status === 200) {
+                            let data = result.data;
+
+                            let emailStatus = data.email_status;
+
+                            if (emailStatus === true) {
+
+                                handleBackDropToggle();
+                                openAlert("Email Address already Registered", "warning");
+                                setStatus(false);
+                            } else {
 
                                 let message = decrypt_message(data.message, key.private_key)
                                 resetDetails();
-                                handleToggle();
-                                setSuccessMessage(message);
-                                setSuccessOpen(true);
+                                handleBackDropToggle();
+                                openAlert(message, "success");
                                 setStatus(false);
-
-
-                            } else {
-                                handleToggle();
-                                setErrorMessage("Registration Failed");
-                                setErrorOpen(true);
-                                setStatus(false);
-
                             }
-                        });
 
-                    } else {
-                        handleToggle();
-                        setErrorMessage("Registration Failed");
-                        setErrorOpen(true);
+
+                        } else {
+                            handleBackDropToggle();
+                            openAlert("Registration Failed", "warning");
+                            setStatus(false);
+
+                        }
+                    }).catch(() => {
+                        handleBackDropToggle();
+                        openAlert("Unexpected Error Occurred!!", "error");
                         setStatus(false);
-                    }
+                    });
+
+                } else {
+                    handleBackDropToggle();
+                    openAlert("Registration Failed", "warning");
+                    setStatus(false);
+                }
 
 
-                });
-
-
-            } catch (e) {
-                handleToggle();
-                setErrorMessage("Unexpected Error Occurred!!");
-                setErrorOpen(true);
+            }).catch(() => {
+                handleBackDropToggle();
+                openAlert("Unexpected Error Occurred!!", "error");
                 setStatus(false);
-            }
+            });
+
+            resetDetails();
         }
-    }, [key.private_key, key.public_key, email, password, status, open])
+    }, [key.private_key, key.public_key, email, password, status, backDropOpen])
 
 
     return (
@@ -212,8 +227,10 @@ export default function SignUp() {
                                     fullWidth
                                     id="email"
                                     label="Email Address"
-                                    name="email"
+                                    placeholder="Your Email Address"
                                     autoComplete="email"
+                                    name="email"
+                                    value={email}
                                     onChange={event => updateValues(event)}
                                 />
                             </Grid>
@@ -223,10 +240,12 @@ export default function SignUp() {
                                     required
                                     fullWidth
                                     name="password"
-                                    label="Password"
+                                    label="New Password"
+                                    placeholder="Your New Password"
                                     type="password"
+                                    value={password}
+                                    autoComplete="new-password"
                                     id="password"
-                                    autoComplete="current-password"
                                     onChange={event => updateValues(event)}
                                 />
                             </Grid>
@@ -243,7 +262,7 @@ export default function SignUp() {
                         </Button>
                         <Grid container justifyContent="flex-end">
                             <Grid item>
-                                <Link to="/" href="/" variant="body2">
+                                <Link href="/" variant="body2">
                                     Already have an account? Sign in
                                 </Link>
                             </Grid>
@@ -254,15 +273,14 @@ export default function SignUp() {
                     <Copyright/>
                 </Box>
             </Container>
-            <Backdrop className={classes.backdrop} open={open}>
+            <Backdrop className={classes.backdrop} open={backDropOpen}>
                 <CircularProgress color="inherit"/>
             </Backdrop>
-            <Snackbar open={successOpen} autoHideDuration={6000} onClose={handleSuccessClose}>
-                <Alert onClose={handleSuccessClose} severity="success">{successMessage}</Alert>
-            </Snackbar>
-            <Snackbar open={errorOpen} autoHideDuration={6000} onClose={handleErrorClose}>
-                <Alert onClose={handleErrorClose} severity="error">{errorMessage}</Alert>
-            </Snackbar>
+            <div className={classes.root}>
+                <Snackbar open={alertOpen} autoHideDuration={6000} onClose={handleAlertClose}>
+                    <Alert onClose={handleAlertClose} severity={String(alertSeverity)}>{alertMessage}</Alert>
+                </Snackbar>
+            </div>
         </div>
     );
 }

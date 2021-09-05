@@ -15,6 +15,7 @@ import axios from "axios";
 import {decrypt_message, encrypt_message} from "../cryptography/EncryptDecrypt";
 import {Backdrop, CircularProgress, Snackbar} from "@material-ui/core";
 import MuiAlert from "@material-ui/lab/Alert";
+import {PublicKeyURL, SingInURL} from "../utils/Constants";
 
 function Alert(props) {
     return <MuiAlert elevation={6} variant="filled" {...props} />;
@@ -36,6 +37,12 @@ function Copyright() {
 const useStyles = makeStyles((theme) => ({
     root: {
         height: '100vh',
+    },
+    root2: {
+        width: '100%',
+        '& > * + *': {
+            marginTop: theme.spacing(2),
+        },
     },
     image: {
         backgroundImage: 'url(https://source.unsplash.com/random)',
@@ -62,6 +69,10 @@ const useStyles = makeStyles((theme) => ({
     submit: {
         margin: theme.spacing(3, 0, 2),
     },
+    backdrop: {
+        zIndex: theme.zIndex.drawer + 1,
+        color: '#fff',
+    },
 }));
 
 export default function SignIn() {
@@ -73,31 +84,28 @@ export default function SignIn() {
         private_key: null
     });
     let [status, setStatus] = useState(false);
-    const [open, setOpen] = useState(false);
-    const [successOpen, setSuccessOpen] = useState(false);
-    const [errorOpen, setErrorOpen] = useState(false);
-    const [successMessage, setSuccessMessage] = useState("Login Success");
-    const [errorMessage, setErrorMessage] = useState("Unknown Error Occurred");
+    const [backDropOpen, setBackDropOpen] = useState(false);
+    const [alertOpen, setAlertOpen] = useState(false);
+    const [alertSeverity, setAlertSeverity] = useState("error")
+    const [alertMessage, setAlertMessage] = useState("Unknown Error Occurred");
     const classes = useStyles();
 
-    const handleSuccessClose = (event, reason) => {
+    const openAlert = (message, severity) => {
+        setAlertMessage(message);
+        setAlertSeverity(severity);
+        setAlertOpen(true);
+    }
+
+    const handleAlertClose = (event, reason) => {
         if (reason === 'clickaway') {
             return;
         }
 
-        setSuccessOpen(false);
+        setAlertOpen(false);
     };
 
-    const handleErrorClose = (event, reason) => {
-        if (reason === 'clickaway') {
-            return;
-        }
-
-        setErrorOpen(false);
-    };
-
-    const handleToggle = () => {
-        setOpen(!open);
+    const handleBackDropToggle = () => {
+        setBackDropOpen(!backDropOpen);
     };
 
 
@@ -136,88 +144,83 @@ export default function SignIn() {
     }
 
     let singInUser = (event) => {
-        handleToggle();
+        handleBackDropToggle();
         event.preventDefault();
         generateKeys().then(() => setStatus(true));
     }
 
 
     useEffect(() => {
-        if (open === true && status === true && key.private_key !== null && key.public_key !== null && email !== "" && password !== "") {
-
-            try {
-
-                axios.get("http://127.0.0.1:5000/get_server_public_key_for_sign_in").then((result) => {
+        if (backDropOpen === true && status === true && key.private_key !== null && key.public_key !== null && email !== "" && password !== "") {
 
 
-                    if (result.status === 200) {
-
-                        let server_public_key_1 = result.data.server_public_key_1;
-
-                        let user = {
-                            email: encrypt_message(email, server_public_key_1),
-                            password: encrypt_message(password, server_public_key_1),
-                            client_public_key: key.public_key
-                        }
-                        axios.post("http://127.0.0.1:5000/sign_in", user).then((result) => {
-                            if (result.status === 200) {
-                                let data = result.data;
-                                let emailStatus = data.email_status
-                                let passwordStatus = data.password_status
-
-                                if (emailStatus === true && passwordStatus === true) {
-                                    let message = decrypt_message(data.message, key.private_key)
-                                    setSuccessMessage(message);
-                                    resetDetails();
-                                    handleToggle();
-                                    setSuccessOpen(true);
-                                    setStatus(false);
-                                } else if (emailStatus === true && passwordStatus === false) {
-                                    handleToggle();
-                                    setErrorMessage("Incorrect Password");
-                                    setErrorOpen(true);
-                                    setStatus(false);
-                                } else if (emailStatus === false) {
-                                    handleToggle();
-                                    setErrorMessage("There is no Account associated with this email");
-                                    setErrorOpen(true);
-                                    setStatus(false);
-                                } else {
-                                    handleToggle();
-                                    setErrorMessage("Login Failed");
-                                    setErrorOpen(true);
-                                    setStatus(false);
-                                }
+            axios.get(PublicKeyURL).then((result) => {
 
 
-                            } else {
-                                handleToggle();
-                                setErrorMessage("Login Failed");
-                                setErrorOpen(true);
-                                setStatus(false);
+                if (result.status === 200) {
 
-                            }
-                        });
+                    let server_public_key_1 = result.data.server_public_key_1;
 
-                    } else {
-                        handleToggle();
-                        setErrorMessage("Login Failed");
-                        setErrorOpen(true);
-                        setStatus(false);
+                    let user = {
+                        email: encrypt_message(email, server_public_key_1),
+                        password: encrypt_message(password, server_public_key_1),
+                        client_public_key: key.public_key
                     }
+                    axios.post(SingInURL, user).then((result) => {
+                        if (result.status === 200) {
+                            let data = result.data;
+                            let emailStatus = data.email_status
+                            let passwordStatus = data.password_status
+
+                            if (emailStatus === true && passwordStatus === true) {
+                                let message = decrypt_message(data.message, key.private_key)
+                                openAlert(message, "success");
+                                handleBackDropToggle();
+                                setStatus(false);
+                            } else if (emailStatus === true && passwordStatus === false) {
+                                handleBackDropToggle();
+                                openAlert("Incorrect Password", "warning");
+                                setStatus(false);
+                            } else if (emailStatus === false) {
+                                handleBackDropToggle();
+                                openAlert("There is no Account associated with this email", "warning");
+                                setStatus(false);
+                            } else {
+                                handleBackDropToggle();
+                                openAlert("Login Failed!!", "warning");
+                                setStatus(false);
+                            }
 
 
-                });
+                        } else {
+                            handleBackDropToggle();
+                            openAlert("Login Failed!!", "warning");
+                            setStatus(false);
+
+                        }
+                    }).catch(() => {
+                        handleBackDropToggle();
+                        openAlert("Unexpected Error Occurred!!", "error");
+                        setStatus(false);
+                    });
+
+                } else {
+                    handleBackDropToggle();
+                    openAlert("Login Failed!!", "warning");
+                    setStatus(false);
+                }
 
 
-            } catch (e) {
-                handleToggle();
-                setErrorMessage("Unexpected Error Occurred!!");
-                setErrorOpen(true);
+            }).catch(() => {
+                handleBackDropToggle();
+                openAlert("Unexpected Error Occurred!!", "error");
                 setStatus(false);
-            }
+            });
+
+            resetDetails();
+
         }
-    }, [key.private_key, key.public_key, email, password, status, open])
+    }, [key.private_key, key.public_key, email, password, status, backDropOpen])
 
 
     return (
@@ -242,10 +245,11 @@ export default function SignIn() {
                                 fullWidth
                                 id="email"
                                 label="Email Address"
+                                placeholder="Your Registered Email Address"
                                 name="email"
-                                onChange={event => updateValues(event)}
                                 autoComplete="email"
-                                autoFocus
+                                value={email}
+                                onChange={event => updateValues(event)}
                             />
                             <TextField
                                 variant="outlined"
@@ -254,10 +258,12 @@ export default function SignIn() {
                                 fullWidth
                                 name="password"
                                 label="Password"
+                                placeholder="Your Current Password"
                                 type="password"
-                                id="password"
-                                onChange={event => updateValues(event)}
                                 autoComplete="current-password"
+                                id="password"
+                                value={password}
+                                onChange={event => updateValues(event)}
                             />
                             <Button
                                 type="submit"
@@ -270,7 +276,7 @@ export default function SignIn() {
                             </Button>
                             <Grid container>
                                 <Grid item>
-                                    <Link href="/signup" variant="body2">
+                                    <Link href="/sign_up_page" variant="body2">
                                         {"Don't have an account? Sign Up"}
                                     </Link>
                                 </Grid>
@@ -282,15 +288,14 @@ export default function SignIn() {
                     </div>
                 </Grid>
             </Grid>
-            <Backdrop className={classes.backdrop} open={open}>
+            <Backdrop className={classes.backdrop} open={backDropOpen}>
                 <CircularProgress color="inherit"/>
             </Backdrop>
-            <Snackbar open={successOpen} autoHideDuration={6000} onClose={handleSuccessClose}>
-                <Alert onClose={handleSuccessClose} severity="success">{successMessage}</Alert>
-            </Snackbar>
-            <Snackbar open={errorOpen} autoHideDuration={6000} onClose={handleErrorClose}>
-                <Alert onClose={handleErrorClose} severity="error">{errorMessage}</Alert>
-            </Snackbar>
+            <div className={classes.root2}>
+                <Snackbar anchorOrigin={{ vertical:"bottom", horizontal:"left" }} open={alertOpen} autoHideDuration={6000} onClose={handleAlertClose}>
+                    <Alert onClose={handleAlertClose} severity={String(alertSeverity)}>{alertMessage}</Alert>
+                </Snackbar>
+            </div>
         </div>
     );
 }

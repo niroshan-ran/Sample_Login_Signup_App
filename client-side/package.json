@@ -9,6 +9,7 @@
     "@testing-library/jest-dom": "^5.14.1",
     "@testing-library/react": "^11.2.7",
     "@testing-library/user-event": "^12.8.3",
+    "autoprefixer": "^7.1.6",
     "axios": "^0.21.1",
     "hybrid-crypto-js": "^0.2.4",
     "node-forge": "^0.10.0",
@@ -34,7 +35,7 @@
   "browserslist": {
     "production": [
       ">0.2%",
-      "not dead",
+      "not ie <= 11",
       "not op_mini all"
     ],
     "development": [
