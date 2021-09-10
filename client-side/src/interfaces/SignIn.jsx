@@ -17,7 +17,6 @@ import {Backdrop, CircularProgress, Snackbar} from "@material-ui/core";
 import {PublicKeyURL, SingInURL} from "../utils/Constants";
 import {Alert} from "./Alert";
 import {Copyright} from "./Copyright";
-import {Redirect} from 'react-router-dom';
 
 const useStyles = makeStyles((theme) => ({
     root: {
@@ -303,7 +302,8 @@ export default function SignIn() {
                 <CircularProgress color="inherit"/>
             </Backdrop>
             <div className={classes.root2}>
-                <Snackbar anchorOrigin={{ vertical:"bottom", horizontal:"left" }} open={alertOpen} autoHideDuration={6000} onClose={handleAlertClose}>
+                <Snackbar anchorOrigin={{vertical: "bottom", horizontal: "left"}} open={alertOpen}
+                          autoHideDuration={6000} onClose={handleAlertClose}>
                     <Alert onClose={handleAlertClose} severity={String(alertSeverity)}>{alertMessage}</Alert>
                 </Snackbar>
             </div>

@@ -174,7 +174,7 @@ export default function Blog() {
                     <main>
                         <MainFeaturedPost post={mainFeaturedPost}/>
                         <Grid container spacing={4}>
-                            {featuredPosts.map((post,index) => (
+                            {featuredPosts.map((post, index) => (
                                 <FeaturedPost key={"FeaturedPost" + index} post={post}/>
                             ))}
                         </Grid>

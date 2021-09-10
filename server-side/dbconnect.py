@@ -35,5 +35,3 @@ class DBConnector(object):
     def commit_database(cls):
         connection = cls.get_connection(cls)
         connection.commit()
-
-
