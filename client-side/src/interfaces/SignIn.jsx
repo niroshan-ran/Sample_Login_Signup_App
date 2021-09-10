@@ -14,25 +14,10 @@ import {RSA} from "hybrid-crypto-js";
 import axios from "axios";
 import {decrypt_message, encrypt_message} from "../cryptography/EncryptDecrypt";
 import {Backdrop, CircularProgress, Snackbar} from "@material-ui/core";
-import MuiAlert from "@material-ui/lab/Alert";
 import {PublicKeyURL, SingInURL} from "../utils/Constants";
-
-function Alert(props) {
-    return <MuiAlert elevation={6} variant="filled" {...props} />;
-}
-
-function Copyright() {
-    return (
-        <Typography variant="body2" color="textSecondary" align="center">
-            {'Copyright © '}
-            <Link color="inherit" href="https://material-ui.com/">
-                Material UI
-            </Link>{' '}
-            {new Date().getFullYear()}
-            {'.'}
-        </Typography>
-    );
-}
+import {Alert} from "./Alert";
+import {Copyright} from "./Copyright";
+import {Redirect} from 'react-router-dom';
 
 const useStyles = makeStyles((theme) => ({
     root: {
@@ -149,6 +134,13 @@ export default function SignIn() {
         generateKeys().then(() => setStatus(true));
     }
 
+    let loginToAdmin = () => {
+        window.location = '/dashboard';
+    }
+
+    let loginToBlog = () => {
+        window.location = '/';
+    }
 
     useEffect(() => {
         if (backDropOpen === true && status === true && key.private_key !== null && key.public_key !== null && email !== "" && password !== "") {
@@ -173,10 +165,28 @@ export default function SignIn() {
                             let passwordStatus = data.password_status
 
                             if (emailStatus === true && passwordStatus === true) {
-                                let message = decrypt_message(data.message, key.private_key)
+                                let message = decrypt_message(data.message, key.private_key);
+                                let userEmail = decrypt_message(data.user_email, key.private_key);
+                                let userFistName = decrypt_message(data.user_firstname, key.private_key);
+                                let userLastName = decrypt_message(data.user_lastname, key.private_key);
+                                let isGeneralUser = data.is_general_user;
                                 openAlert(message, "success");
                                 handleBackDropToggle();
                                 setStatus(false);
+                                localStorage.setItem("userFirstName", userFistName);
+                                localStorage.setItem("userLastName", userLastName);
+                                localStorage.setItem("userEmail", userEmail);
+
+
+                                if (isGeneralUser === true) {
+                                    loginToBlog();
+                                    localStorage.setItem("isGeneralUser", "Yes");
+                                } else {
+                                    loginToAdmin();
+                                    localStorage.setItem("isGeneralUser", "No");
+                                }
+
+
                             } else if (emailStatus === true && passwordStatus === false) {
                                 handleBackDropToggle();
                                 openAlert("Incorrect Password", "warning");
@@ -238,6 +248,7 @@ export default function SignIn() {
                         </Typography>
                         <form className={classes.form} onSubmit={event => singInUser(event)}>
                             <TextField
+                                autoFocus
                                 type="email"
                                 variant="outlined"
                                 margin="normal"

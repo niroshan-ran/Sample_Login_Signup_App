@@ -1,9 +1,11 @@
 import json
-from flask_cors import CORS, cross_origin
-from flask import Flask, request, jsonify
+
 from Crypto.PublicKey import RSA
-from dbconnect import DBConnector
+from flask import Flask, request, jsonify
+from flask_cors import CORS, cross_origin
+
 import EncryptDecrypt as crypt
+from dbconnect import DBConnector
 
 app = Flask(__name__)
 
@@ -36,18 +38,30 @@ def sign_in():
 
     password_matches = False
     encrypted_message = ""
+    firstName = ""
+    lastName = ""
+    generalUser = True
+    email = ""
 
     if email_exists:
         password_matches = crypt.check_password(password, result[0][1])
 
     if password_matches:
         encrypted_message = crypt.encrypt_message(message, client_public_key)
+        firstName = crypt.encrypt_message(result[0][2], client_public_key)
+        lastName = crypt.encrypt_message(result[0][3], client_public_key)
+        generalUser = evaluateIntValueToBool(int(result[0][4]))
+        email = crypt.encrypt_message(result[0][0], client_public_key)
 
     public_key2 = save_exchange_keys_to_db(client_public_key, dbcon)
 
     return jsonify({"message": encrypted_message,
                     "password_status": password_matches,
                     "email_status": email_exists,
+                    "user_email": email,
+                    "user_firstname": firstName,
+                    "user_lastname": lastName,
+                    "is_general_user": generalUser,
                     'server_public_key_2': public_key2.exportKey().decode()})
 
 
@@ -64,6 +78,20 @@ def get_server_public_key():
     keypair = crypt.generate_key_file()
 
     return jsonify({"server_public_key_1": keypair.public_key().export_key().decode()})
+
+
+def evaluateBooleanValueToInt(val: bool):
+    if not bool:
+        return 0
+    else:
+        return 1
+
+
+def evaluateIntValueToBool(val: int):
+    if val == 0:
+        return False
+    else:
+        return True
 
 
 @app.route('/sign_up', methods=['POST'])
@@ -84,13 +112,21 @@ def sign_up():
     encrypted_message = ""
 
     if not email_exists:
-        query_user = "INSERT INTO user_table VALUES (%s, %s)"
+        query_user = "INSERT INTO user_table VALUES (%s, %s, %s, %s, %s)"
 
         hash_password = crypt.get_hashed_password(crypt.decrypt_message(records["password"]))
 
+        firstname = crypt.decrypt_message(records["firstName"])
+        lastname = crypt.decrypt_message(records["lastName"])
+
+        generalUser = evaluateBooleanValueToInt(True)
+
         val_user = (
             email,
-            hash_password
+            hash_password,
+            firstname,
+            lastname,
+            generalUser
         )
 
         dbcon.execute_query(query_user, val_user)

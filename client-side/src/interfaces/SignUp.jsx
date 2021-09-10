@@ -9,30 +9,14 @@ import Box from '@material-ui/core/Box';
 import LockOutlinedIcon from '@material-ui/icons/LockOutlined';
 import Typography from '@material-ui/core/Typography';
 import {makeStyles} from '@material-ui/core/styles';
-import MuiAlert from '@material-ui/lab/Alert';
+import {Alert} from "./Alert";
 import Container from '@material-ui/core/Container';
 import axios from "axios";
 import {RSA} from 'hybrid-crypto-js';
 import {decrypt_message, encrypt_message} from "../cryptography/EncryptDecrypt";
 import {Backdrop, CircularProgress, Snackbar} from "@material-ui/core";
 import {PublicKeyURL, SingUpURL} from "../utils/Constants";
-
-function Alert(props) {
-    return <MuiAlert elevation={6} variant="filled" {...props} />;
-}
-
-function Copyright() {
-    return (
-        <Typography variant="body2" color="textSecondary" align="center">
-            {'Copyright © '}
-            <Link color="inherit" href="https://material-ui.com/">
-                Material UI
-            </Link>{' '}
-            {new Date().getFullYear()}
-            {'.'}
-        </Typography>
-    );
-}
+import {Copyright} from "./Copyright";
 
 const useStyles = makeStyles((theme) => ({
     root: {
@@ -68,6 +52,8 @@ export default function SignUp() {
 
     let [email, setEmail] = useState("");
     let [password, setPassword] = useState("");
+    let [firstName, setFirstName] = useState("");
+    let [lastName, setLastName] = useState("");
     let [key, setKey] = useState({
         public_key: null,
         private_key: null
@@ -100,23 +86,30 @@ export default function SignUp() {
     let resetDetails = () => {
         setEmail("");
         setPassword("");
+        setLastName("");
+        setFirstName("");
     }
 
 
     let updateValues = (event) => {
+        setStatus(false);
         switch (event.target.id) {
+            case "firstName":
+                setFirstName(event.target.value);
+                break;
+            case "lastName":
+                setLastName(event.target.value);
+                break;
             case "email":
-                setStatus(false);
                 setEmail(event.target.value)
                 break;
             case "password":
-                setStatus(false);
                 setPassword(event.target.value)
                 break;
             default:
-                setStatus(false);
-                console.log("None")
+                resetDetails();
                 break;
+
         }
     }
 
@@ -151,6 +144,8 @@ export default function SignUp() {
                     let server_public_key_1 = result.data.server_public_key_1;
 
                     let user = {
+                        firstName: encrypt_message(firstName, server_public_key_1),
+                        lastName: encrypt_message(lastName, server_public_key_1),
                         email: encrypt_message(email, server_public_key_1),
                         password: encrypt_message(password, server_public_key_1),
                         client_public_key: key.public_key
@@ -167,6 +162,7 @@ export default function SignUp() {
                                 openAlert("Email Address already Registered", "warning");
                                 setStatus(false);
                             } else {
+
 
                                 let message = decrypt_message(data.message, key.private_key)
                                 resetDetails();
@@ -219,6 +215,34 @@ export default function SignUp() {
                     </Typography>
                     <form className={classes.form} onSubmit={event => singUpUser(event)}>
                         <Grid container spacing={2}>
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    autoFocus
+                                    name="firstName"
+                                    variant="outlined"
+                                    required
+                                    fullWidth
+                                    id="firstName"
+                                    label="First Name"
+                                    value={firstName}
+                                    placeholder="First Name"
+                                    onChange={event => updateValues(event)}
+                                />
+                            </Grid>
+                            <Grid item xs={12} sm={6}>
+                                <TextField
+                                    variant="outlined"
+                                    required
+                                    fullWidth
+                                    id="lastName"
+                                    label="Last Name"
+                                    name="lastName"
+                                    placeholder="Last Name"
+                                    value={lastName}
+                                    onChange={event => updateValues(event)}
+
+                                />
+                            </Grid>
                             <Grid item xs={12}>
                                 <TextField
                                     variant="outlined"
@@ -262,7 +286,7 @@ export default function SignUp() {
                         </Button>
                         <Grid container justifyContent="flex-end">
                             <Grid item>
-                                <Link href="/" variant="body2">
+                                <Link href="/sign_in_page" variant="body2">
                                     Already have an account? Sign in
                                 </Link>
                             </Grid>
