@@ -9,17 +9,16 @@ from dbconnect import DBConnector
 
 app = Flask(__name__)
 
-CORS(app)
-
 api_v2_cors_config = {
     "origins": ["http://localhost:3000/*"],
-    "methods": ["OPTIONS", "GET", "POST"],
+    "methods": ["HEAD", "POST", "OPTIONS", "PUT", "PATCH", "DELETE"],
     "allow_headers": ["Authorization", "Content-Type"]
 }
 
+CORS(app, **api_v2_cors_config)
+
 
 @app.route('/sign_in', methods=['POST'])
-@cross_origin(**api_v2_cors_config)
 def sign_in():
     dbcon = DBConnector()
 
@@ -72,8 +71,7 @@ def check_email_exists(dbcon, email):
     return result
 
 
-@app.route('/get_server_public_key', methods=['GET'])
-@cross_origin(**api_v2_cors_config)
+@app.route('/get_server_public_key', methods=['POST'])
 def get_server_public_key():
     keypair = crypt.generate_key_file()
 
@@ -95,7 +93,6 @@ def evaluateIntValueToBool(val: int):
 
 
 @app.route('/sign_up', methods=['POST'])
-@cross_origin(**api_v2_cors_config)
 def sign_up():
     dbcon = DBConnector()
 

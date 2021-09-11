@@ -136,7 +136,7 @@ export default function SignUp() {
         if (backDropOpen === true && status === true && key.private_key !== null && key.public_key !== null && email !== "" && password !== "") {
 
 
-            axios.get(PublicKeyURL).then((result) => {
+            axios.post(PublicKeyURL).then((result) => {
 
 
                 if (result.status === 200) {
@@ -201,6 +201,10 @@ export default function SignUp() {
         }
     }, [key.private_key, key.public_key, email, password, status, backDropOpen])
 
+
+    if (localStorage.getItem("userEmail") !== null) {
+        window.location = "/"
+    }
 
     return (
         <div>
