@@ -37,3 +37,4 @@
 /client-side/npm-debug.log*
 /client-side/yarn-debug.log*
 /client-side/yarn-error.log*
+/client-side/package-lock.json
