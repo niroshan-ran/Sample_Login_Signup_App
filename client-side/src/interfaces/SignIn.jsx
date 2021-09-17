@@ -10,7 +10,7 @@ import Grid from '@material-ui/core/Grid';
 import LockOutlinedIcon from '@material-ui/icons/LockOutlined';
 import Typography from '@material-ui/core/Typography';
 import {makeStyles} from '@material-ui/core/styles';
-import {RSA} from "hybrid-crypto-js";
+import forge from "node-forge";
 import axios from "axios";
 import {decrypt_message, encrypt_message} from "../cryptography/EncryptDecrypt";
 import {Backdrop, CircularProgress, Snackbar} from "@material-ui/core";
@@ -88,10 +88,6 @@ export default function SignIn() {
         setAlertOpen(false);
     };
 
-    const handleBackDropToggle = () => {
-        setBackDropOpen(!backDropOpen);
-    };
-
 
     let updateValues = (event) => {
         switch (event.target.id) {
@@ -112,14 +108,14 @@ export default function SignIn() {
 
     let generateKeys = async () => {
 
-        let rsa = new RSA();
+        let rsa = forge.pki.rsa;
 
-        await rsa.generateKeyPair(function (keyPair) {
+        await rsa.generateKeyPair({bits: 2048, workers: 2}, (err, keyPair) => {
             setKey({
-                public_key: keyPair.publicKey,
-                private_key: keyPair.privateKey
+                public_key: forge.pki.publicKeyToPem(keyPair.publicKey),
+                private_key: forge.pki.privateKeyToPem(keyPair.privateKey)
             });
-        }, 2048);
+        });
     }
 
     let resetDetails = () => {
@@ -128,7 +124,7 @@ export default function SignIn() {
     }
 
     let singInUser = (event) => {
-        handleBackDropToggle();
+        setBackDropOpen(!backDropOpen);
         event.preventDefault();
         generateKeys().then(() => setStatus(true));
     }
@@ -170,7 +166,7 @@ export default function SignIn() {
                                 let userLastName = decrypt_message(data.user_lastname, key.private_key);
                                 let isGeneralUser = data.is_general_user;
                                 openAlert(message, "success");
-                                handleBackDropToggle();
+                                setBackDropOpen(!backDropOpen);
                                 setStatus(false);
                                 localStorage.setItem("userFirstName", userFistName);
                                 localStorage.setItem("userLastName", userLastName);
@@ -187,41 +183,41 @@ export default function SignIn() {
 
 
                             } else if (emailStatus === true && passwordStatus === false) {
-                                handleBackDropToggle();
+                                setBackDropOpen(!backDropOpen);
                                 openAlert("Incorrect Password", "warning");
                                 setStatus(false);
                             } else if (emailStatus === false) {
-                                handleBackDropToggle();
+                                setBackDropOpen(!backDropOpen);
                                 openAlert("There is no Account associated with this email", "warning");
                                 setStatus(false);
                             } else {
-                                handleBackDropToggle();
+                                setBackDropOpen(!backDropOpen);
                                 openAlert("Login Failed!!", "warning");
                                 setStatus(false);
                             }
 
 
                         } else {
-                            handleBackDropToggle();
+                            setBackDropOpen(!backDropOpen);
                             openAlert("Login Failed!!", "warning");
                             setStatus(false);
 
                         }
                     }).catch(() => {
-                        handleBackDropToggle();
+                        setBackDropOpen(!backDropOpen);
                         openAlert("Unexpected Error Occurred!!", "error");
                         setStatus(false);
                     });
 
                 } else {
-                    handleBackDropToggle();
+                    setBackDropOpen(!backDropOpen);
                     openAlert("Login Failed!!", "warning");
                     setStatus(false);
                 }
 
 
             }).catch(() => {
-                handleBackDropToggle();
+                setBackDropOpen(!backDropOpen);
                 openAlert("Unexpected Error Occurred!!", "error");
                 setStatus(false);
             });

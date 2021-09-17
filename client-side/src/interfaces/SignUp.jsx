@@ -12,11 +12,11 @@ import {makeStyles} from '@material-ui/core/styles';
 import {Alert} from "./Alert";
 import Container from '@material-ui/core/Container';
 import axios from "axios";
-import {RSA} from 'hybrid-crypto-js';
 import {decrypt_message, encrypt_message} from "../cryptography/EncryptDecrypt";
 import {Backdrop, CircularProgress, Snackbar} from "@material-ui/core";
 import {PublicKeyURL, SingUpURL} from "../utils/Constants";
 import {Copyright} from "./Copyright";
+import forge from "node-forge";
 
 const useStyles = makeStyles((theme) => ({
     root: {
@@ -59,7 +59,7 @@ export default function SignUp() {
         private_key: null
     });
     let [status, setStatus] = useState(false);
-    const [backDropOpen, setBackDropBackDropOpen] = useState(false);
+    const [backDropOpen, setBackDropOpen] = useState(false);
     const [alertOpen, setAlertOpen] = useState(false);
     const [alertSeverity, setAlertSeverity] = useState("error")
     const [alertMessage, setAlertMessage] = useState("Unknown Error Occurred");
@@ -77,10 +77,6 @@ export default function SignUp() {
         }
 
         setAlertOpen(false);
-    };
-
-    const handleBackDropToggle = () => {
-        setBackDropBackDropOpen(!backDropOpen);
     };
 
     let resetDetails = () => {
@@ -115,25 +111,25 @@ export default function SignUp() {
 
     let generateKeys = async () => {
 
-        let rsa = new RSA();
+        let rsa = forge.pki.rsa;
 
-        await rsa.generateKeyPair(function (keyPair) {
+        await rsa.generateKeyPair({bits: 2048, workers: 2}, (err, keyPair) => {
             setKey({
-                public_key: keyPair.publicKey,
-                private_key: keyPair.privateKey
+                public_key: forge.pki.publicKeyToPem(keyPair.publicKey),
+                private_key: forge.pki.privateKeyToPem(keyPair.privateKey)
             });
-        }, 2048);
+        });
     }
 
     let singUpUser = (event) => {
-        handleBackDropToggle();
+        setBackDropOpen(!backDropOpen);
         event.preventDefault();
         generateKeys().then(() => setStatus(true));
     }
 
 
     useEffect(() => {
-        if (backDropOpen === true && status === true && key.private_key !== null && key.public_key !== null && email !== "" && password !== "") {
+        if (firstName !== "" && lastName !== "" && backDropOpen === true && status === true && key.private_key !== null && key.public_key !== null && email !== "" && password !== "") {
 
 
             axios.post(PublicKeyURL).then((result) => {
@@ -158,7 +154,7 @@ export default function SignUp() {
 
                             if (emailStatus === true) {
 
-                                handleBackDropToggle();
+                                setBackDropOpen(!backDropOpen);
                                 openAlert("Email Address already Registered", "warning");
                                 setStatus(false);
                             } else {
@@ -166,40 +162,40 @@ export default function SignUp() {
 
                                 let message = decrypt_message(data.message, key.private_key)
                                 resetDetails();
-                                handleBackDropToggle();
+                                setBackDropOpen(!backDropOpen);
                                 openAlert(message, "success");
                                 setStatus(false);
                             }
 
 
                         } else {
-                            handleBackDropToggle();
+                            setBackDropOpen(!backDropOpen);
                             openAlert("Registration Failed", "warning");
                             setStatus(false);
 
                         }
                     }).catch(() => {
-                        handleBackDropToggle();
+                        setBackDropOpen(!backDropOpen);
                         openAlert("Unexpected Error Occurred!!", "error");
                         setStatus(false);
                     });
 
                 } else {
-                    handleBackDropToggle();
+                    setBackDropOpen(!backDropOpen);
                     openAlert("Registration Failed", "warning");
                     setStatus(false);
                 }
 
 
             }).catch(() => {
-                handleBackDropToggle();
+                setBackDropOpen(!backDropOpen);
                 openAlert("Unexpected Error Occurred!!", "error");
                 setStatus(false);
             });
 
             resetDetails();
         }
-    }, [key.private_key, key.public_key, email, password, status, backDropOpen])
+    }, [key.private_key, key.public_key, email, password, status, backDropOpen, firstName, lastName])
 
 
     if (localStorage.getItem("userEmail") !== null) {

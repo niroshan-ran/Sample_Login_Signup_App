@@ -10,7 +10,7 @@ from dbconnect import DBConnector
 app = Flask(__name__)
 
 api_v2_cors_config = {
-    "origins": ["http://localhost:3000/*"],
+    "origins": ["http://localhost:8089/*"],
     "methods": ["HEAD", "POST", "OPTIONS", "PUT", "PATCH", "DELETE"],
     "allow_headers": ["Authorization", "Content-Type"]
 }

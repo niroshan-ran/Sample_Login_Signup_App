@@ -19,6 +19,8 @@
 /client-side/.pnp
 /client-side.pnp.js
 /client-side/package.lock.json
+/client-node-app/node_modules
+/client-node-app/package-lock.json
 # testing
 /client-side/coverage
 
