@@ -1,4 +1,5 @@
 import json
+import os
 
 from Crypto.PublicKey import RSA
 from flask import Flask, request, jsonify, render_template, render_template_string
@@ -24,7 +25,7 @@ app = Flask(__name__, static_folder="../client-side/build/static", template_fold
 
 csrf = CSRFProtect(app)
 
-app.secret_key = '5accdb11b2c10a78d7c92c5fa102ea77fcd50c2058b00f6e'
+app.secret_key = os.urandom(25)
 
 
 @app.route('/', defaults={'path': ''})
