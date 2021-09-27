@@ -4,23 +4,28 @@ import {BrowserRouter, Route, Switch} from 'react-router-dom';
 import SignUp from "./interfaces/SignUp";
 import Dashboard from "./interfaces/dashboard/Dashboard";
 import Blog from "./interfaces/blog/Blog";
+import {BlogRoute, DashBoardRoute, RegularRoute, SignInRoute, SignUpRoute} from "./utils/Constants";
+import WelcomePage from "./interfaces/WelcomePage";
 
 function App() {
     return <div>
         <BrowserRouter>
 
             <Switch>
-                <Route path="/sign_up_page">
+                <Route path={SignUpRoute}>
                     <SignUp/>
                 </Route>
-                <Route path="/dashboard">
+                <Route path={DashBoardRoute}>
                     <Dashboard/>
                 </Route>
-                <Route path="/sign_in_page">
+                <Route path={SignInRoute}>
                     <SignIn/>
                 </Route>
-                <Route path="/">
+                <Route path={BlogRoute}>
                     <Blog/>
+                </Route>
+                <Route path={RegularRoute}>
+                    <WelcomePage/>
                 </Route>
             </Switch>
         </BrowserRouter>

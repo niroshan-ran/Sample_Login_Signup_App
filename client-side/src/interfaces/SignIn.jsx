@@ -14,7 +14,7 @@ import forge from "node-forge";
 import axios from "axios";
 import {decrypt_message, encrypt_message} from "../cryptography/EncryptDecrypt";
 import {Backdrop, CircularProgress, Snackbar} from "@material-ui/core";
-import {PublicKeyURL, SingInURL} from "../utils/Constants";
+import {BlogRoute, DashBoardRoute, PublicKeyURL, SignInURL, SignUpRoute} from "../utils/Constants";
 import {Alert} from "./Alert";
 import {Copyright} from "./Copyright";
 
@@ -133,11 +133,11 @@ export default function SignIn() {
     }
 
     let loginToAdmin = () => {
-        window.location = '/dashboard';
+        window.location = DashBoardRoute;
     }
 
     let loginToBlog = () => {
-        window.location = '/';
+        window.location = BlogRoute;
     }
 
     useEffect(() => {
@@ -159,7 +159,7 @@ export default function SignIn() {
                         client_public_key: key.public_key
                     }
 
-                    axios.post(SingInURL, user).then((result) => {
+                    axios.post(SignInURL, user).then((result) => {
                         if (result.status === 200) {
                             let data = result.data;
                             let emailStatus = data.email_status
@@ -234,7 +234,7 @@ export default function SignIn() {
     }, [key.private_key, key.public_key, email, password, status, backDropOpen])
 
     if (localStorage.getItem("userEmail") !== null) {
-        window.location = "/"
+        window.location = BlogRoute
     }
 
     return (
@@ -292,7 +292,7 @@ export default function SignIn() {
                             </Button>
                             <Grid container>
                                 <Grid item>
-                                    <Link href="/sign_up_page" variant="body2">
+                                    <Link href={SignUpRoute} variant="body2">
                                         {"Don't have an account? Sign Up"}
                                     </Link>
                                 </Grid>

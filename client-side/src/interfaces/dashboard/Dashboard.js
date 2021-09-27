@@ -22,6 +22,7 @@ import Deposits from './Deposits';
 import Orders from './Orders';
 import {Copyright} from "../Copyright";
 import {Redirect} from "react-router-dom";
+import {BlogRoute} from "../../utils/Constants";
 
 const drawerWidth = 240;
 
@@ -116,7 +117,7 @@ export default function Dashboard() {
     const fixedHeightPaper = clsx(classes.paper, classes.fixedHeight);
 
     if (localStorage.getItem("isGeneralUser") === null || localStorage.getItem("isGeneralUser") === "Yes") {
-        return <Redirect to="/"/>;
+        return <Redirect to={BlogRoute}/>;
     } else {
 
         return (
@@ -141,7 +142,7 @@ export default function Dashboard() {
                         <IconButton onClick={(event) => {
                             event.preventDefault();
                             localStorage.clear();
-                            window.location = '/';
+                            window.location = BlogRoute;
                         }} color="inherit">
 
                             <ExitToAppIcon/>

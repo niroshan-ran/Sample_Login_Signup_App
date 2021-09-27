@@ -1,12 +1,24 @@
 import json
 
 from Crypto.PublicKey import RSA
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, render_template_string
 from flask_cors import CORS
 from flask_wtf.csrf import CSRFProtect, generate_csrf
 
 import EncryptDecrypt as crypt
 from dbconnect import DBConnector
+
+# Constants
+
+API = '/api'
+
+SIGN_UP = '%s/sign_up' % API
+
+GET_SERVER_PUBLIC_KEY = '%s/get_server_public_key' % API
+
+SIGN_IN = '%s/sign_in' % API
+
+# End of Constants
 
 app = Flask(__name__, static_folder="../client-side/build/static", template_folder="../client-side/build")
 
@@ -23,16 +35,19 @@ def catch_all(path):
 
 
 api_v2_cors_config = {
-    "origins": ["http://localhost:8089/*", "http://localhost:3000/*", "http://localhost:5000/*"],
-    "methods": ["HEAD", "POST", "OPTIONS", "PUT", "PATCH", "DELETE"],
+    "origins": ["http://localhost:3000/*", "http://localhost:5000/*"],
+    "methods": ["HEAD", "POST", "OPTIONS", "PUT", "PATCH", "DELETE", "GET"],
     "allow_headers": ["Authorization", "Content-Type"]
 }
 
 CORS(app, **api_v2_cors_config)
 
 
-@app.route('/sign_in', methods=['POST'])
+@app.route(SIGN_IN, methods=['POST', 'GET'])
 def sign_in():
+    if request.method != "POST":
+        return render_template_string("<h1>Direct API access not Allowed</h1>"), 400
+
     dbConnection = DBConnector()
 
     records = json.loads(request.data)
@@ -84,8 +99,11 @@ def check_email_exists(dbConnection, email):
     return result
 
 
-@app.route('/get_server_public_key', methods=['POST'])
+@app.route(GET_SERVER_PUBLIC_KEY, methods=['POST', 'GET'])
 def get_server_public_key():
+    if request.method != "POST":
+        return render_template_string("<h1>Direct API access not Allowed</h1>"), 400
+
     keypair = crypt.generate_key_file()
 
     return jsonify({"server_public_key_1": keypair.public_key().export_key().decode()})
@@ -105,8 +123,11 @@ def evaluateIntValueToBool(val: int):
         return True
 
 
-@app.route('/sign_up', methods=['POST'])
+@app.route(SIGN_UP, methods=['POST', 'GET'])
 def sign_up():
+    if request.method != "POST":
+        return render_template_string("<h1>Direct API access not Allowed</h1>"), 400
+
     dbConnection = DBConnector()
 
     records = json.loads(request.data)

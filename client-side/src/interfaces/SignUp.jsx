@@ -14,7 +14,7 @@ import Container from '@material-ui/core/Container';
 import axios from "axios";
 import {decrypt_message, encrypt_message} from "../cryptography/EncryptDecrypt";
 import {Backdrop, CircularProgress, Snackbar} from "@material-ui/core";
-import {PublicKeyURL, SingUpURL} from "../utils/Constants";
+import {BlogRoute, PublicKeyURL, SignInRoute, SignUpURL} from "../utils/Constants";
 import {Copyright} from "./Copyright";
 import forge from "node-forge";
 
@@ -150,7 +150,7 @@ export default function SignUp() {
                     }
 
 
-                    axios.post(SingUpURL, user).then((result) => {
+                    axios.post(SignUpURL, user).then((result) => {
                         if (result.status === 200) {
                             let data = result.data;
 
@@ -203,7 +203,7 @@ export default function SignUp() {
 
 
     if (localStorage.getItem("userEmail") !== null) {
-        window.location = "/"
+        window.location = BlogRoute
     }
 
     return (
@@ -291,7 +291,7 @@ export default function SignUp() {
                         </Button>
                         <Grid container justifyContent="flex-end">
                             <Grid item>
-                                <Link href="/sign_in_page" variant="body2">
+                                <Link href={SignInRoute} variant="body2">
                                     Already have an account? Sign in
                                 </Link>
                             </Grid>

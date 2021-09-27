@@ -7,6 +7,7 @@ import IconButton from '@material-ui/core/IconButton';
 import SearchIcon from '@material-ui/icons/Search';
 import Typography from '@material-ui/core/Typography';
 import Link from '@material-ui/core/Link';
+import {BlogRoute, SignInRoute} from "../../utils/Constants";
 
 const useStyles = makeStyles((theme) => ({
     toolbar: {
@@ -51,11 +52,11 @@ export default function Header(props) {
                 {(localStorage.getItem("isGeneralUser") === "Yes") ?
                     <Button onClick={() => {
                         localStorage.clear();
-                        window.location = '/';
+                        window.location = BlogRoute;
                     }} variant="outlined" size="small">
                         Logout
                     </Button> :
-                    <Button href="/sign_in_page" variant="outlined" size="small">
+                    <Button href={SignInRoute} variant="outlined" size="small">
                         Sign in
                     </Button>
                 }
