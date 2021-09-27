@@ -1,16 +1,28 @@
 import json
+import os
 
 from Crypto.PublicKey import RSA
-from flask import Flask, request, jsonify
-from flask_cors import CORS, cross_origin
+from flask import Flask, request, jsonify, send_from_directory
+from flask_cors import CORS
 
 import EncryptDecrypt as crypt
 from dbconnect import DBConnector
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='../client-side/build')
+
+
+# Serve React App
+@app.route('/', defaults={'path': ''})
+@app.route('/<path:path>')
+def serve(path):
+    if path != "" and os.path.exists(app.static_folder + '/' + path):
+        return send_from_directory(app.static_folder, path)
+    else:
+        return send_from_directory(app.static_folder, 'index.html')
+
 
 api_v2_cors_config = {
-    "origins": ["http://localhost:8089/*", "http://localhost:3000/*"],
+    "origins": ["http://localhost:8089/*", "http://localhost:3000/*", "http://localhost:5000/*"],
     "methods": ["HEAD", "POST", "OPTIONS", "PUT", "PATCH", "DELETE"],
     "allow_headers": ["Authorization", "Content-Type"]
 }
@@ -20,14 +32,14 @@ CORS(app, **api_v2_cors_config)
 
 @app.route('/sign_in', methods=['POST'])
 def sign_in():
-    dbcon = DBConnector()
+    dbConnection = DBConnector()
 
     records = json.loads(request.data)
 
     email = crypt.decrypt_message(records["email"])
     password = crypt.decrypt_message(records["password"])
 
-    result = check_email_exists(dbcon, email)
+    result = check_email_exists(dbConnection, email)
 
     message = "Your Login Attempt Successfully Completed"
 
@@ -52,7 +64,7 @@ def sign_in():
         generalUser = evaluateIntValueToBool(int(result[0][4]))
         email = crypt.encrypt_message(result[0][0], client_public_key)
 
-    public_key2 = save_exchange_keys_to_db(client_public_key, dbcon)
+    public_key2 = save_exchange_keys_to_db(client_public_key, dbConnection)
 
     return jsonify({"message": encrypted_message,
                     "password_status": password_matches,
@@ -64,10 +76,10 @@ def sign_in():
                     'server_public_key_2': public_key2.exportKey().decode()})
 
 
-def check_email_exists(dbcon, email):
+def check_email_exists(dbConnection, email):
     query = "SELECT * FROM user_table WHERE email = %s"
     val = (email,)
-    result = dbcon.execute_query(query, val)
+    result = dbConnection.execute_query(query, val)
     return result
 
 
@@ -94,13 +106,13 @@ def evaluateIntValueToBool(val: int):
 
 @app.route('/sign_up', methods=['POST'])
 def sign_up():
-    dbcon = DBConnector()
+    dbConnection = DBConnector()
 
     records = json.loads(request.data)
 
     email = crypt.decrypt_message(records["email"])
 
-    email_exists = len(check_email_exists(dbcon, email)) > 0
+    email_exists = len(check_email_exists(dbConnection, email)) > 0
 
     client_public_key = records["client_public_key"]
 
@@ -126,18 +138,18 @@ def sign_up():
             generalUser
         )
 
-        dbcon.execute_query(query_user, val_user)
-        dbcon.commit_database()
+        dbConnection.execute_query(query_user, val_user)
+        dbConnection.commit_database()
 
         encrypted_message = crypt.encrypt_message(message, client_public_key)
 
-    public_key2 = save_exchange_keys_to_db(client_public_key, dbcon)
+    public_key2 = save_exchange_keys_to_db(client_public_key, dbConnection)
 
     return jsonify({'message': encrypted_message, "email_status": email_exists,
                     'server_public_key_2': public_key2.exportKey().decode()})
 
 
-def save_exchange_keys_to_db(client_public_key, dbcon):
+def save_exchange_keys_to_db(client_public_key, dbConnection):
     private_key1 = RSA.importKey(open("private_key.pem").read())
     public_key1 = RSA.importKey(open("public_key.pem").read())
     private_key2 = crypt.generate_key_file()
@@ -149,10 +161,10 @@ def save_exchange_keys_to_db(client_public_key, dbcon):
         public_key1.exportKey().decode(), private_key1.exportKey().decode(), public_key2.exportKey().decode(),
         private_key2.exportKey().decode(),
         str.encode(client_public_key).decode())
-    dbcon.execute_query(query_keys, val_keys)
-    dbcon.commit_database()
+    dbConnection.execute_query(query_keys, val_keys)
+    dbConnection.commit_database()
     return public_key2
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, use_reloader=True, port=5000, threaded=True)
