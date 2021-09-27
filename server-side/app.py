@@ -23,9 +23,19 @@ SIGN_IN = '%s/sign_in' % API
 
 app = Flask(__name__, static_folder="../client-side/build/static", template_folder="../client-side/build")
 
-csrf = CSRFProtect(app)
+csrfApp = CSRFProtect(app)
 
 app.secret_key = os.urandom(25)
+
+app.config.update(SESSION_COOKIE_HTTPONLY=True,
+                  SESSION_COOKIE_SAMESITE='Strict')
+
+
+@app.after_request
+def apply_caching(response):
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers['X-Content-Type-Options'] = "nosniff"
+    return response
 
 
 @app.route('/', defaults={'path': ''})
