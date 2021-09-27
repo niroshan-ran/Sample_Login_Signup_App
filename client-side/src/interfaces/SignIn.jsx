@@ -18,6 +18,7 @@ import {PublicKeyURL, SingInURL} from "../utils/Constants";
 import {Alert} from "./Alert";
 import {Copyright} from "./Copyright";
 
+
 const useStyles = makeStyles((theme) => ({
     root: {
         height: '100vh',
@@ -73,6 +74,8 @@ export default function SignIn() {
     const [alertSeverity, setAlertSeverity] = useState("error")
     const [alertMessage, setAlertMessage] = useState("Unknown Error Occurred");
     const classes = useStyles();
+
+    axios.defaults.headers.common["X-CSRFToken"] = window.token;
 
     const openAlert = (message, severity) => {
         setAlertMessage(message);
@@ -141,7 +144,9 @@ export default function SignIn() {
         if (backDropOpen === true && status === true && key.private_key !== null && key.public_key !== null && email !== "" && password !== "") {
 
 
-            axios.post(PublicKeyURL).then((result) => {
+            axios.post(PublicKeyURL, {}, {
+
+            }).then((result) => {
 
 
                 if (result.status === 200) {
@@ -153,6 +158,7 @@ export default function SignIn() {
                         password: encrypt_message(password, server_public_key_1),
                         client_public_key: key.public_key
                     }
+
                     axios.post(SingInURL, user).then((result) => {
                         if (result.status === 200) {
                             let data = result.data;
@@ -244,7 +250,7 @@ export default function SignIn() {
                         <Typography component="h1" variant="h5">
                             Sign in
                         </Typography>
-                        <form className={classes.form} onSubmit={event => singInUser(event)}>
+                        <form method="post" className={classes.form} onSubmit={event => singInUser(event)}>
                             <TextField
                                 autoFocus
                                 type="email"
@@ -274,6 +280,7 @@ export default function SignIn() {
                                 value={password}
                                 onChange={event => updateValues(event)}
                             />
+                            <input type="hidden" name="csrf_token" value={window.token}/>
                             <Button
                                 type="submit"
                                 fullWidth

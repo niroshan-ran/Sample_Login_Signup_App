@@ -71,6 +71,8 @@ export default function SignUp() {
         setAlertOpen(true);
     }
 
+    axios.defaults.headers.common["X-CSRFToken"] = window.token;
+
     const handleAlertClose = (event, reason) => {
         if (reason === 'clickaway') {
             return;
@@ -146,6 +148,8 @@ export default function SignUp() {
                         password: encrypt_message(password, server_public_key_1),
                         client_public_key: key.public_key
                     }
+
+
                     axios.post(SingUpURL, user).then((result) => {
                         if (result.status === 200) {
                             let data = result.data;
@@ -213,7 +217,7 @@ export default function SignUp() {
                     <Typography component="h1" variant="h5">
                         Sign up
                     </Typography>
-                    <form className={classes.form} onSubmit={event => singUpUser(event)}>
+                    <form method="post" className={classes.form} onSubmit={event => singUpUser(event)}>
                         <Grid container spacing={2}>
                             <Grid item xs={12} sm={6}>
                                 <TextField
@@ -275,6 +279,7 @@ export default function SignUp() {
                             </Grid>
 
                         </Grid>
+                        <input type="hidden" name="csrf_token" value={window.token}/>
                         <Button
                             type="submit"
                             fullWidth

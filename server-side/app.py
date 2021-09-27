@@ -1,24 +1,25 @@
 import json
-import os
 
 from Crypto.PublicKey import RSA
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
+from flask_wtf.csrf import CSRFProtect, generate_csrf
 
 import EncryptDecrypt as crypt
 from dbconnect import DBConnector
 
-app = Flask(__name__, static_folder='../client-side/build')
+app = Flask(__name__, static_folder="../client-side/build/static", template_folder="../client-side/build")
+
+csrf = CSRFProtect(app)
+
+app.secret_key = '5accdb11b2c10a78d7c92c5fa102ea77fcd50c2058b00f6e'
 
 
-# Serve React App
 @app.route('/', defaults={'path': ''})
 @app.route('/<path:path>')
-def serve(path):
-    if path != "" and os.path.exists(app.static_folder + '/' + path):
-        return send_from_directory(app.static_folder, path)
-    else:
-        return send_from_directory(app.static_folder, 'index.html')
+def catch_all(path):
+    generate_csrf()
+    return render_template("index.html")
 
 
 api_v2_cors_config = {
