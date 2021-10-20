@@ -10,11 +10,9 @@ import Grid from '@material-ui/core/Grid';
 import LockOutlinedIcon from '@material-ui/icons/LockOutlined';
 import Typography from '@material-ui/core/Typography';
 import {makeStyles} from '@material-ui/core/styles';
-import forge from "node-forge";
 import axios from "axios";
-import {decrypt_message, encrypt_message} from "../cryptography/EncryptDecrypt";
 import {Backdrop, CircularProgress, Snackbar} from "@material-ui/core";
-import {BlogRoute, DashBoardRoute, PublicKeyURL, SignInURL, SignUpRoute} from "../utils/Constants";
+import {BlogRoute, DashBoardRoute, SignInURL, SignUpRoute} from "../utils/Constants";
 import {Alert} from "./Alert";
 import {Copyright} from "./Copyright";
 
@@ -64,16 +62,12 @@ export default function SignIn() {
 
     let [email, setEmail] = useState("");
     let [password, setPassword] = useState("");
-    let [key, setKey] = useState({
-        public_key: null,
-        private_key: null
-    });
     let [status, setStatus] = useState(false);
     const [backDropOpen, setBackDropOpen] = useState(false);
     const [alertOpen, setAlertOpen] = useState(false);
     const [alertSeverity, setAlertSeverity] = useState("error")
     const [alertMessage, setAlertMessage] = useState("Unknown Error Occurred");
-    const [isServerPublicKey, setIsServerPublicKey] = useState(false);
+
     const classes = useStyles();
 
     axios.defaults.headers.common["X-CSRFToken"] = window.token;
@@ -110,17 +104,7 @@ export default function SignIn() {
         }
     }
 
-    let generateKeys = async () => {
 
-        let rsa = forge.pki.rsa;
-
-        await rsa.generateKeyPair({bits: 2048, workers: 2}, (err, keyPair) => {
-            setKey({
-                public_key: forge.pki.publicKeyToPem(keyPair.publicKey),
-                private_key: forge.pki.privateKeyToPem(keyPair.privateKey)
-            });
-        });
-    }
 
     let resetDetails = () => {
         setEmail("");
@@ -130,8 +114,7 @@ export default function SignIn() {
     let singInUser = (event) => {
         event.preventDefault();
         setBackDropOpen(!backDropOpen);
-        checkServerPublicKey();
-        generateKeys().then(() => setStatus(true));
+        setStatus(true);
     }
 
     let loginToAdmin = () => {
@@ -142,52 +125,28 @@ export default function SignIn() {
         window.location = BlogRoute;
     }
 
-    let checkServerPublicKey = () => {
-        if (sessionStorage.getItem("server_public_key") === null) {
 
-            axios.post(PublicKeyURL, {}, {}).then((result) => {
-
-                sessionStorage.setItem("server_public_key", result.data.server_public_key_1);
-                setIsServerPublicKey(true);
-            }).catch(() => {
-                setIsServerPublicKey(false);
-                setBackDropOpen(!backDropOpen);
-                openAlert("Unexpected Error Occurred!!", "error");
-                setStatus(false);
-            });
-
-
-        } else {
-            setIsServerPublicKey(true);
-        }
-    }
 
     useEffect(() => {
-        if (isServerPublicKey === true && backDropOpen === true && status === true && key.private_key !== null && key.public_key !== null && email !== "" && password !== "") {
-
-
-            let server_public_key_1 = sessionStorage.getItem("server_public_key");
+        if (backDropOpen === true && status === true && email !== "" && password !== "") {
 
 
             let user = {
-                email: encrypt_message(email, server_public_key_1),
-                password: encrypt_message(password, server_public_key_1),
-                client_public_key: key.public_key
+                email: email,
+                password: password
             }
 
             axios.post(SignInURL, user).then((result) => {
                 if (result.status === 200) {
                     let data = result.data;
-                    let emailStatus = data.email_status
-                    let passwordStatus = data.password_status
-
-                    sessionStorage.setItem("server_public_key", data.server_public_key_2);
+                    let emailStatus = data.email_status;
+                    let passwordStatus = data.password_status;
 
                     if (emailStatus === true && passwordStatus === true) {
-                        let message = decrypt_message(data.message, key.private_key);
-                        let userEmail = decrypt_message(data.user_email, key.private_key);
-                        let userFistName = decrypt_message(data.user_firstname, key.private_key);
-                        let userLastName = decrypt_message(data.user_lastname, key.private_key);
+                        let message = data.message;
+                        let userEmail = data.user_email;
+                        let userFistName = data.user_firstname;
+                        let userLastName = data.user_lastname;
                         let isGeneralUser = data.is_general_user;
                         openAlert(message, "success");
                         setBackDropOpen(!backDropOpen);
@@ -236,7 +195,7 @@ export default function SignIn() {
             resetDetails();
 
         }
-    }, [key.private_key, key.public_key, email, password, status, backDropOpen, isServerPublicKey])
+    }, [email, password, status, backDropOpen])
 
     if (localStorage.getItem("userEmail") !== null) {
         window.location = BlogRoute

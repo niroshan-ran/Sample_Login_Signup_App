@@ -8,10 +8,6 @@
 # python interpretor
 /server-side/venv
 
-# keyfiles
-/server-side/private_key.pem
-/server-side/public_key.pem
-
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
 # dependencies

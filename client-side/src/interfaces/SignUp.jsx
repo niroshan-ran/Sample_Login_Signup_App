@@ -12,11 +12,9 @@ import {makeStyles} from '@material-ui/core/styles';
 import {Alert} from "./Alert";
 import Container from '@material-ui/core/Container';
 import axios from "axios";
-import {decrypt_message, encrypt_message} from "../cryptography/EncryptDecrypt";
 import {Backdrop, CircularProgress, Snackbar} from "@material-ui/core";
-import {BlogRoute, PublicKeyURL, SignInRoute, SignUpURL} from "../utils/Constants";
+import {BlogRoute, SignInRoute, SignUpURL} from "../utils/Constants";
 import {Copyright} from "./Copyright";
-import forge from "node-forge";
 
 const useStyles = makeStyles((theme) => ({
     root: {
@@ -54,17 +52,14 @@ export default function SignUp() {
     let [password, setPassword] = useState("");
     let [firstName, setFirstName] = useState("");
     let [lastName, setLastName] = useState("");
-    let [key, setKey] = useState({
-        public_key: null,
-        private_key: null
-    });
+
     let [status, setStatus] = useState(false);
     const [backDropOpen, setBackDropOpen] = useState(false);
     const [alertOpen, setAlertOpen] = useState(false);
     const [alertSeverity, setAlertSeverity] = useState("error")
     const [alertMessage, setAlertMessage] = useState("Unknown Error Occurred");
     const classes = useStyles();
-    const [isServerPublicKey, setIsServerPublicKey] = useState(false);
+
 
     const openAlert = (message, severity) => {
         setAlertMessage(message);
@@ -112,57 +107,23 @@ export default function SignUp() {
         }
     }
 
-    let generateKeys = async () => {
-
-        let rsa = forge.pki.rsa;
-
-        await rsa.generateKeyPair({bits: 2048, workers: 2}, (err, keyPair) => {
-            setKey({
-                public_key: forge.pki.publicKeyToPem(keyPair.publicKey),
-                private_key: forge.pki.privateKeyToPem(keyPair.privateKey)
-            });
-        });
-    }
-
     let singUpUser = (event) => {
         event.preventDefault();
         setBackDropOpen(!backDropOpen);
-        checkServerPublicKey();
-        generateKeys().then(() => setStatus(true));
-    }
-
-    let checkServerPublicKey = () => {
-        if (sessionStorage.getItem("server_public_key") === null) {
-
-            axios.post(PublicKeyURL, {}, {}).then((result) => {
-
-                sessionStorage.setItem("server_public_key", result.data.server_public_key_1);
-                setIsServerPublicKey(true);
-            }).catch(() => {
-                setIsServerPublicKey(false);
-                setBackDropOpen(!backDropOpen);
-                openAlert("Unexpected Error Occurred!!", "error");
-                setStatus(false);
-            });
-
-
-        } else {
-            setIsServerPublicKey(true);
-        }
+        setStatus(true);
     }
 
     useEffect(() => {
-        if (isServerPublicKey === true && firstName !== "" && lastName !== "" && backDropOpen === true && status === true && key.private_key !== null && key.public_key !== null && email !== "" && password !== "") {
+        if (firstName !== "" && lastName !== "" && backDropOpen === true && status === true && email !== "" && password !== "") {
 
 
-            let server_public_key_1 = sessionStorage.getItem("server_public_key");
+
 
             let user = {
-                firstName: encrypt_message(firstName, server_public_key_1),
-                lastName: encrypt_message(lastName, server_public_key_1),
-                email: encrypt_message(email, server_public_key_1),
-                password: encrypt_message(password, server_public_key_1),
-                client_public_key: key.public_key
+                firstName: firstName,
+                lastName: lastName,
+                email: email,
+                password: password
             }
 
 
@@ -172,7 +133,7 @@ export default function SignUp() {
 
                     let emailStatus = data.email_status;
 
-                    sessionStorage.setItem("server_public_key", data.server_public_key_2);
+
 
                     if (emailStatus === true) {
 
@@ -182,7 +143,7 @@ export default function SignUp() {
                     } else {
 
 
-                        let message = decrypt_message(data.message, key.private_key)
+                        let message = data.message
                         resetDetails();
                         setBackDropOpen(!backDropOpen);
                         openAlert(message, "success");
@@ -205,7 +166,7 @@ export default function SignUp() {
 
             resetDetails();
         }
-    }, [key.private_key, key.public_key, email, password, status, backDropOpen, firstName, lastName, isServerPublicKey])
+    }, [email, password, status, backDropOpen, firstName, lastName])
 
 
     if (localStorage.getItem("userEmail") !== null) {
