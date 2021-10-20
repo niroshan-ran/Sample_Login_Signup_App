@@ -26,14 +26,19 @@ csrfApp = CSRFProtect(app)
 
 app.secret_key = os.urandom(25)
 
-app.config.update(SESSION_COOKIE_HTTPONLY=True,
-                  SESSION_COOKIE_SAMESITE='Strict')
+app.config.update(SESSION_COOKIE_HTTPSONLY=True,
+                  SESSION_COOKIE_SAMESITE='Strict',
+                  SESSION_COOKIE_SECURE=True)
 
 
 @app.after_request
 def apply_caching(response):
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
     response.headers["X-Frame-Options"] = "SAMEORIGIN"
     response.headers['X-Content-Type-Options'] = "nosniff"
+
     return response
 
 
@@ -47,7 +52,8 @@ def catch_all(path):
 api_v2_cors_config = {
     "origins": ["https://192.168.8.137/*"],
     "methods": ["HEAD", "POST", "OPTIONS", "PUT", "PATCH", "DELETE", "GET"],
-    "allow_headers": ["Authorization", "Content-Type"]
+    "allow_headers": ["Authorization", "Content-Type", "X-Frame-Options", 'X-Content-Type-Options', "Cache-Control",
+                      "Pragma", "Expires"]
 }
 
 CORS(app, **api_v2_cors_config)
