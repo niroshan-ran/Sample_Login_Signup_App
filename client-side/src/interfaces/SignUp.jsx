@@ -64,6 +64,7 @@ export default function SignUp() {
     const [alertSeverity, setAlertSeverity] = useState("error")
     const [alertMessage, setAlertMessage] = useState("Unknown Error Occurred");
     const classes = useStyles();
+    const [isServerPublicKey, setIsServerPublicKey] = useState(false);
 
     const openAlert = (message, severity) => {
         setAlertMessage(message);
@@ -124,82 +125,87 @@ export default function SignUp() {
     }
 
     let singUpUser = (event) => {
-        setBackDropOpen(!backDropOpen);
         event.preventDefault();
+        setBackDropOpen(!backDropOpen);
+        checkServerPublicKey();
         generateKeys().then(() => setStatus(true));
     }
 
+    let checkServerPublicKey = () => {
+        if (sessionStorage.getItem("server_public_key") === null) {
+
+            axios.post(PublicKeyURL, {}, {}).then((result) => {
+
+                sessionStorage.setItem("server_public_key", result.data.server_public_key_1);
+                setIsServerPublicKey(true);
+            }).catch(() => {
+                setIsServerPublicKey(false);
+                setBackDropOpen(!backDropOpen);
+                openAlert("Unexpected Error Occurred!!", "error");
+                setStatus(false);
+            });
+
+
+        } else {
+            setIsServerPublicKey(true);
+        }
+    }
 
     useEffect(() => {
-        if (firstName !== "" && lastName !== "" && backDropOpen === true && status === true && key.private_key !== null && key.public_key !== null && email !== "" && password !== "") {
+        if (isServerPublicKey === true && firstName !== "" && lastName !== "" && backDropOpen === true && status === true && key.private_key !== null && key.public_key !== null && email !== "" && password !== "") {
 
 
-            axios.post(PublicKeyURL).then((result) => {
+            let server_public_key_1 = sessionStorage.getItem("server_public_key");
+
+            let user = {
+                firstName: encrypt_message(firstName, server_public_key_1),
+                lastName: encrypt_message(lastName, server_public_key_1),
+                email: encrypt_message(email, server_public_key_1),
+                password: encrypt_message(password, server_public_key_1),
+                client_public_key: key.public_key
+            }
 
 
+            axios.post(SignUpURL, user).then((result) => {
                 if (result.status === 200) {
+                    let data = result.data;
 
-                    let server_public_key_1 = result.data.server_public_key_1;
+                    let emailStatus = data.email_status;
 
-                    let user = {
-                        firstName: encrypt_message(firstName, server_public_key_1),
-                        lastName: encrypt_message(lastName, server_public_key_1),
-                        email: encrypt_message(email, server_public_key_1),
-                        password: encrypt_message(password, server_public_key_1),
-                        client_public_key: key.public_key
+                    sessionStorage.setItem("server_public_key", data.server_public_key_2);
+
+                    if (emailStatus === true) {
+
+                        setBackDropOpen(!backDropOpen);
+                        openAlert("Email Address already Registered", "warning");
+                        setStatus(false);
+                    } else {
+
+
+                        let message = decrypt_message(data.message, key.private_key)
+                        resetDetails();
+                        setBackDropOpen(!backDropOpen);
+                        openAlert(message, "success");
+                        setStatus(false);
                     }
 
-
-                    axios.post(SignUpURL, user).then((result) => {
-                        if (result.status === 200) {
-                            let data = result.data;
-
-                            let emailStatus = data.email_status;
-
-                            if (emailStatus === true) {
-
-                                setBackDropOpen(!backDropOpen);
-                                openAlert("Email Address already Registered", "warning");
-                                setStatus(false);
-                            } else {
-
-
-                                let message = decrypt_message(data.message, key.private_key)
-                                resetDetails();
-                                setBackDropOpen(!backDropOpen);
-                                openAlert(message, "success");
-                                setStatus(false);
-                            }
-
-
-                        } else {
-                            setBackDropOpen(!backDropOpen);
-                            openAlert("Registration Failed", "warning");
-                            setStatus(false);
-
-                        }
-                    }).catch(() => {
-                        setBackDropOpen(!backDropOpen);
-                        openAlert("Unexpected Error Occurred!!", "error");
-                        setStatus(false);
-                    });
 
                 } else {
                     setBackDropOpen(!backDropOpen);
                     openAlert("Registration Failed", "warning");
                     setStatus(false);
+
                 }
-
-
             }).catch(() => {
                 setBackDropOpen(!backDropOpen);
                 openAlert("Unexpected Error Occurred!!", "error");
                 setStatus(false);
             });
 
+
             resetDetails();
         }
-    }, [key.private_key, key.public_key, email, password, status, backDropOpen, firstName, lastName])
+    }, [key.private_key, key.public_key, email, password, status, backDropOpen, firstName, lastName, isServerPublicKey])
 
 
     if (localStorage.getItem("userEmail") !== null) {

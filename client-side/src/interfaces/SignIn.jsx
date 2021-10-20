@@ -73,6 +73,7 @@ export default function SignIn() {
     const [alertOpen, setAlertOpen] = useState(false);
     const [alertSeverity, setAlertSeverity] = useState("error")
     const [alertMessage, setAlertMessage] = useState("Unknown Error Occurred");
+    const [isServerPublicKey, setIsServerPublicKey] = useState(false);
     const classes = useStyles();
 
     axios.defaults.headers.common["X-CSRFToken"] = window.token;
@@ -127,8 +128,9 @@ export default function SignIn() {
     }
 
     let singInUser = (event) => {
-        setBackDropOpen(!backDropOpen);
         event.preventDefault();
+        setBackDropOpen(!backDropOpen);
+        checkServerPublicKey();
         generateKeys().then(() => setStatus(true));
     }
 
@@ -140,88 +142,91 @@ export default function SignIn() {
         window.location = BlogRoute;
     }
 
+    let checkServerPublicKey = () => {
+        if (sessionStorage.getItem("server_public_key") === null) {
+
+            axios.post(PublicKeyURL, {}, {}).then((result) => {
+
+                sessionStorage.setItem("server_public_key", result.data.server_public_key_1);
+                setIsServerPublicKey(true);
+            }).catch(() => {
+                setIsServerPublicKey(false);
+                setBackDropOpen(!backDropOpen);
+                openAlert("Unexpected Error Occurred!!", "error");
+                setStatus(false);
+            });
+
+
+        } else {
+            setIsServerPublicKey(true);
+        }
+    }
+
     useEffect(() => {
-        if (backDropOpen === true && status === true && key.private_key !== null && key.public_key !== null && email !== "" && password !== "") {
+        if (isServerPublicKey === true && backDropOpen === true && status === true && key.private_key !== null && key.public_key !== null && email !== "" && password !== "") {
 
 
-            axios.post(PublicKeyURL, {}, {
-
-            }).then((result) => {
+            let server_public_key_1 = sessionStorage.getItem("server_public_key");
 
 
+            let user = {
+                email: encrypt_message(email, server_public_key_1),
+                password: encrypt_message(password, server_public_key_1),
+                client_public_key: key.public_key
+            }
+
+            axios.post(SignInURL, user).then((result) => {
                 if (result.status === 200) {
+                    let data = result.data;
+                    let emailStatus = data.email_status
+                    let passwordStatus = data.password_status
 
-                    let server_public_key_1 = result.data.server_public_key_1;
+                    sessionStorage.setItem("server_public_key", data.server_public_key_2);
 
-                    let user = {
-                        email: encrypt_message(email, server_public_key_1),
-                        password: encrypt_message(password, server_public_key_1),
-                        client_public_key: key.public_key
+                    if (emailStatus === true && passwordStatus === true) {
+                        let message = decrypt_message(data.message, key.private_key);
+                        let userEmail = decrypt_message(data.user_email, key.private_key);
+                        let userFistName = decrypt_message(data.user_firstname, key.private_key);
+                        let userLastName = decrypt_message(data.user_lastname, key.private_key);
+                        let isGeneralUser = data.is_general_user;
+                        openAlert(message, "success");
+                        setBackDropOpen(!backDropOpen);
+                        setStatus(false);
+                        localStorage.setItem("userFirstName", userFistName);
+                        localStorage.setItem("userLastName", userLastName);
+                        localStorage.setItem("userEmail", userEmail);
+
+
+                        if (isGeneralUser === true) {
+                            loginToBlog();
+                            localStorage.setItem("isGeneralUser", "Yes");
+                        } else {
+                            loginToAdmin();
+                            localStorage.setItem("isGeneralUser", "No");
+                        }
+
+
+                    } else if (emailStatus === true && passwordStatus === false) {
+                        setBackDropOpen(!backDropOpen);
+                        openAlert("Incorrect Password", "warning");
+                        setStatus(false);
+                    } else if (emailStatus === false) {
+                        setBackDropOpen(!backDropOpen);
+                        openAlert("There is no Account associated with this email", "warning");
+                        setStatus(false);
+                    } else {
+                        setBackDropOpen(!backDropOpen);
+                        openAlert("Login Failed!!", "warning");
+                        setStatus(false);
                     }
 
-                    axios.post(SignInURL, user).then((result) => {
-                        if (result.status === 200) {
-                            let data = result.data;
-                            let emailStatus = data.email_status
-                            let passwordStatus = data.password_status
-
-                            if (emailStatus === true && passwordStatus === true) {
-                                let message = decrypt_message(data.message, key.private_key);
-                                let userEmail = decrypt_message(data.user_email, key.private_key);
-                                let userFistName = decrypt_message(data.user_firstname, key.private_key);
-                                let userLastName = decrypt_message(data.user_lastname, key.private_key);
-                                let isGeneralUser = data.is_general_user;
-                                openAlert(message, "success");
-                                setBackDropOpen(!backDropOpen);
-                                setStatus(false);
-                                localStorage.setItem("userFirstName", userFistName);
-                                localStorage.setItem("userLastName", userLastName);
-                                localStorage.setItem("userEmail", userEmail);
-
-
-                                if (isGeneralUser === true) {
-                                    loginToBlog();
-                                    localStorage.setItem("isGeneralUser", "Yes");
-                                } else {
-                                    loginToAdmin();
-                                    localStorage.setItem("isGeneralUser", "No");
-                                }
-
-
-                            } else if (emailStatus === true && passwordStatus === false) {
-                                setBackDropOpen(!backDropOpen);
-                                openAlert("Incorrect Password", "warning");
-                                setStatus(false);
-                            } else if (emailStatus === false) {
-                                setBackDropOpen(!backDropOpen);
-                                openAlert("There is no Account associated with this email", "warning");
-                                setStatus(false);
-                            } else {
-                                setBackDropOpen(!backDropOpen);
-                                openAlert("Login Failed!!", "warning");
-                                setStatus(false);
-                            }
-
-
-                        } else {
-                            setBackDropOpen(!backDropOpen);
-                            openAlert("Login Failed!!", "warning");
-                            setStatus(false);
-
-                        }
-                    }).catch(() => {
-                        setBackDropOpen(!backDropOpen);
-                        openAlert("Unexpected Error Occurred!!", "error");
-                        setStatus(false);
-                    });
 
                 } else {
                     setBackDropOpen(!backDropOpen);
                     openAlert("Login Failed!!", "warning");
                     setStatus(false);
+
                 }
-
-
             }).catch(() => {
                 setBackDropOpen(!backDropOpen);
                 openAlert("Unexpected Error Occurred!!", "error");
@@ -231,7 +236,7 @@ export default function SignIn() {
             resetDetails();
 
         }
-    }, [key.private_key, key.public_key, email, password, status, backDropOpen])
+    }, [key.private_key, key.public_key, email, password, status, backDropOpen, isServerPublicKey])
 
     if (localStorage.getItem("userEmail") !== null) {
         window.location = BlogRoute
