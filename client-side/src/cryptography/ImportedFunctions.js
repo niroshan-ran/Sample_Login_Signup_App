@@ -1,4 +1,4 @@
-const forge = require("node-forge");
+import forge from "node-forge";
 let pki = forge.pki;
 
 export function rsaOaepSha1AesGcm256HybridStringEncryption(publicKey, plaintext) {

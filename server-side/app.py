@@ -200,4 +200,6 @@ def save_exchange_keys_to_db(client_public_key, dbConnection):
 
 
 if __name__ == '__main__':
-    app.run(debug=True, use_reloader=True, port=5000, threaded=True)
+    from waitress import serve
+
+    serve(app, host="0.0.0.0", port=8085)
