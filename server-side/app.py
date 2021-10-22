@@ -1,7 +1,7 @@
 import json
 import os
 
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, render_template_string
 from flask_cors import CORS
 from flask_wtf.csrf import CSRFProtect, generate_csrf
 
@@ -50,7 +50,7 @@ def catch_all(path):
 
 
 api_v2_cors_config = {
-    "origins": ["https://192.168.8.137/*"],
+    "origins": ["https://192.168.8.137:5000/*"],
     "methods": ["HEAD", "POST", "OPTIONS", "PUT", "PATCH", "DELETE", "GET"],
     "allow_headers": ["Authorization", "Content-Type", "X-Frame-Options", 'X-Content-Type-Options', "Cache-Control",
                       "Pragma", "Expires"]
@@ -165,4 +165,4 @@ def sign_up():
 
 
 if __name__ == '__main__':
-    app.run(ssl_context='adhoc', host="0.0.0.0", port=443)
+    app.run(ssl_context='adhoc', host="0.0.0.0")

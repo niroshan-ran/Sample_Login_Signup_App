@@ -1,4 +1,4 @@
-const ServerURL = document.location.origin + "/api";
+const ServerURL = window.location.origin + "/api";
 
 export const SignUpURL = ServerURL + "/sign_up";
 export const SignInURL = ServerURL + "/sign_in";
