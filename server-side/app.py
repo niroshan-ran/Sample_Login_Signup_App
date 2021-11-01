@@ -1,6 +1,8 @@
 import json
 import os
 
+import waitress
+
 from flask import Flask, request, jsonify, render_template, render_template_string
 from flask_cors import CORS
 from flask_wtf.csrf import CSRFProtect, generate_csrf
@@ -50,7 +52,7 @@ def catch_all(path):
 
 
 api_v2_cors_config = {
-    "origins": ["https://192.168.8.137:5000/*"],
+    "origins": ["https://cfb0-2402-4000-2280-e656-f952-8e07-fb42-1248.ngrok.io"],
     "methods": ["HEAD", "POST", "OPTIONS", "PUT", "PATCH", "DELETE", "GET"],
     "allow_headers": ["Authorization", "Content-Type", "X-Frame-Options", 'X-Content-Type-Options', "Cache-Control",
                       "Pragma", "Expires"]
@@ -165,4 +167,4 @@ def sign_up():
 
 
 if __name__ == '__main__':
-    app.run(ssl_context='adhoc', host="0.0.0.0")
+    waitress.serve(app, host='0.0.0.0', port=80)
