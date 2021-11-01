@@ -2,7 +2,6 @@
   "name": "client-side",
   "version": "0.1.0",
   "private": true,
-  "proxy": "https://cfb0-2402-4000-2280-e656-f952-8e07-fb42-1248.ngrok.io",
   "dependencies": {
     "@material-ui/core": "^4.12.3",
     "@material-ui/icons": "^4.11.2",

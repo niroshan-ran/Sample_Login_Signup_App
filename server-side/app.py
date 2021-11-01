@@ -52,7 +52,7 @@ def catch_all(path):
 
 
 api_v2_cors_config = {
-    "origins": ["https://cfb0-2402-4000-2280-e656-f952-8e07-fb42-1248.ngrok.io"],
+    "origins": [r"^https://\w+\.ngrok\.io$"],
     "methods": ["HEAD", "POST", "OPTIONS", "PUT", "PATCH", "DELETE", "GET"],
     "allow_headers": ["Authorization", "Content-Type", "X-Frame-Options", 'X-Content-Type-Options', "Cache-Control",
                       "Pragma", "Expires"]
